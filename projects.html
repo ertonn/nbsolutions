@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projects – NB Engineering Consulting</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/media-queries.css">
 </head>
 
 <body>
@@ -22,10 +23,16 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="services.html">Services</a></li>
                     <li><a href="projects.html">Projects</a></li>
+                    <li><a href="contact.html" class="mobile-contact-btn">Contact Us</a></li>
                 </ul>
             </nav>
             <div class="header-button">
                 <a href="contact.html" class="cta-button">CONTACT US</a>
+            </div>
+            <div class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </header>
@@ -33,95 +40,7 @@
     <main>
         <section class="projects-page">
             <div class="projects-container">
-                <!-- Railway Projects -->
-                <div class="project-category">
-                    <div class="category-header">
-                        <span class="section-subtitle">[ Complex Engineering ]</span>
-                        <h2 class="section-title">Railway Projects</h2>
-                    </div>
-                    <div class="project-links-grid">
-                        <div class="project-link-card">
-                            <h3 class="card-title">Rrogozhinë – Fier – Vlorë Railway Rehabilitation</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Feasibility study and Preliminary Design of Durres – Prishtine
-                                Railway</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Tirana – Durrës Railway and Airport Connection</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Tirana Urban Railway Section (Terminal – City Station)</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Water Supply & Hydraulics -->
-                <div class="project-category">
-                    <div class="category-header">
-                        <span class="section-subtitle">[ Sustainable Systems ]</span>
-                        <h2 class="section-title">Water Supply & Hydraulics</h2>
-                    </div>
-                    <div class="project-links-grid">
-                        <div class="project-link-card">
-                            <h3 class="card-title">Durres Water Supply Network Optimization (World Bank / AKUM)</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Hydraulic Verification of Main Pipelines – Durres</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Technical Support for Durres WSIP (SETEC Engineering)</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Roads & Civil Infrastructure -->
-                <div class="project-category">
-                    <div class="category-header">
-                        <span class="section-subtitle">[ Urban Development ]</span>
-                        <h2 class="section-title">Roads & Civil Infrastructure</h2>
-                    </div>
-                    <div class="project-links-grid">
-                        <div class="project-link-card">
-                            <h3 class="card-title">Qukës – Qafë Pllocë Road Corridor</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Muzak Topia Road – Berat</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Buildings & Special Projects -->
-                <div class="project-category">
-                    <div class="category-header">
-                        <span class="section-subtitle">[ Specialized Structures ]</span>
-                        <h2 class="section-title">Buildings & Special Projects</h2>
-                    </div>
-                    <div class="project-links-grid">
-                        <div class="project-link-card">
-                            <h3 class="card-title">Shna Ndou Church (Kisha e Laçit)</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Shell Albania – Drilling Sites Infrastructure</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                        <div class="project-link-card">
-                            <h3 class="card-title">Jale Tourist & Residential Complex (ongoing)</h3>
-                            <a href="index.html#projects" class="project-link">View in Portfolio</a>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- Data loaded dynamically via projects.js -->
             </div>
         </section>
         <!-- Project Modal -->
@@ -177,10 +96,11 @@
                     <div class="social-box">
                         <h4 class="footer-title">Follow Us</h4>
                         <ul class="social-links-grid">
-                            <li><a href="#" title="Twitter"><img src="assets/images/icons/twitter.png" alt="X"></a>
+                            <li><a href="https://www.linkedin.com" title="LinkedIn"><img
+                                        src="assets/images/social media/linkedin.png" alt="LinkedIn"></a>
                             </li>
-                            <li><a href="#" title="LinkedIn"><img src="assets/images/icons/linkedin.png" alt="IN"></a>
-                            </li>
+                            <li><a href="https://www.youtube.com/@nbengineeringNB" title="YouTube"><img
+                                        src="assets/images/social media/youtube.png" alt="YouTube"></a></li>
                         </ul>
                     </div>
                 </div>
@@ -216,22 +136,11 @@
                     </ul>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <div class="copyright">
-                    © 2026 NB Engineering Consulting. All rights reserved.
-                </div>
-                <ul class="legal-links">
-                    <li><a href="#">Terms & Conditions</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Sitemap</a></li>
-                    <li><a href="#">Cookies</a></li>
-                </ul>
-                <div class="back-to-top">
-                    <a href="#top">Back To Top</a>
-                </div>
-            </div>
         </div>
     </footer>
+    <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
+    <script src="js/projects.js"></script>
+    <script src="js/mobile-menu.js"></script>
 </body>
 
 </html>

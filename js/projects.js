@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     function renderProjects(projects) {
-        // Group projects by category
         const categories = {};
         projects.forEach(project => {
             if (!categories[project.category]) {
@@ -23,14 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const projectsContainer = document.querySelector('.projects-container');
-        // Clear existing static content if we want to replace it entirely
-        // projectsContainer.innerHTML = ''; 
-
-        // Or, since the user might want to keep the structure, let's target the grids
-        // But the HTML structure is currently hardcoded categories. 
-        // Best approach: dynamic rendering of the whole list to support "Add/Remove".
-
-        projectsContainer.innerHTML = ''; // Start fresh
+        projectsContainer.innerHTML = '';
 
         for (const [categoryName, categoryProjects] of Object.entries(categories)) {
             const categorySection = document.createElement('div');
@@ -49,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
             categoryProjects.forEach(project => {
                 const card = document.createElement('div');
                 card.className = 'project-link-card';
+                card.id = `project-${project.id}`;
                 card.innerHTML = `
                     <div class="card-image-wrapper">
                         <img src="${project.image}" alt="${project.title}" loading="lazy">

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NB Construction</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/media-queries.css">
 
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
@@ -29,10 +30,16 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="services.html">Services</a></li>
                     <li><a href="projects.html">Projects</a></li>
+                    <li><a href="contact.html" class="mobile-contact-btn">Contact Us</a></li>
                 </ul>
             </nav>
             <div class="header-button">
                 <a href="contact.html" class="cta-button">CONTACT US</a>
+            </div>
+            <div class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </header>
@@ -140,27 +147,25 @@
                             </h2>
                         </div>
                         <p class="about-description">
-                            NB Engineering Consulting is an independent engineering consultancy providing specialized
-                            services in transport infrastructure, railway engineering, water supply systems, and civil
-                            works.
-                            The company supports international and local clients through all project stages, from
-                            feasibility and hydraulic modeling to detailed design, tender documentation, and technical
-                            reviews, with a strong focus on constructability and compliance with international
-                            standards.
+                            NB Engineering Consulting specializes in transport, railway, and water infrastructure.
+                            <span class="hide-mobile">The company supports international and local clients through all
+                                project stages, from feasibility and hydraulic modeling to detailed design, tender
+                                documentation, and technical reviews, with a strong focus on constructability and
+                                compliance with international standards.</span>
                         </p>
                         <div class="about-cards">
                             <div class="about-card">
                                 <h3 class="about-card-title">Our Vision</h3>
                                 <p class="about-card-text">
-                                    To become leading construction company recognized innovation, sustainability, and
-                                    excellence improve everyday life.
+                                    To become a leading company recognized for innovation, sustainability, and
+                                    excellence.
                                 </p>
                             </div>
                             <div class="about-card">
                                 <h3 class="about-card-title">Our Mission</h3>
                                 <ul class="about-card-list">
-                                    <li>Deliver construction solutions</li>
-                                    <li>Foster trust and long-term</li>
+                                    <li>Deliver expert solutions</li>
+                                    <li>Foster long-term trust</li>
                                     <li>Embrace technology</li>
                                 </ul>
                             </div>
@@ -225,9 +230,12 @@
                         </ul>
 
                         <div class="contact-images">
-                            <img src="assets/images/hero/background.jpg" alt="Construction Work 1">
-                            <img src="assets/images/hero/background.jpg" alt="Construction Work 2">
-                            <img src="assets/images/hero/background.jpg" alt="Construction Work 3">
+                            <img src="assets/images/contact/29992-thumb-360-0-1432431027.jpg"
+                                alt="Construction Progress">
+                            <img src="assets/images/contact/Civil-Engineering-Drawings-560x560-643223266.jpeg"
+                                alt="Engineering Drawings">
+                            <img src="assets/images/contact/Engineer-PNG-Transparent-Photo-3936069441.png"
+                                alt="Engineer Expertise">
                         </div>
                     </div>
 
@@ -323,7 +331,9 @@
             </div>
         </div>
     </footer>
+    <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
     <script src="js/index-projects.js"></script>
+    <script src="js/mobile-menu.js"></script>
 </body>
 
 </html>

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us – NB Engineering Consulting</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/media-queries.css">
 
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
@@ -29,10 +30,16 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="services.html">Services</a></li>
                     <li><a href="projects.html">Projects</a></li>
+                    <li><a href="contact.html" class="mobile-contact-btn">Contact Us</a></li>
                 </ul>
             </nav>
             <div class="header-button">
                 <a href="contact.html" class="cta-button">CONTACT US</a>
+            </div>
+            <div class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </header>
@@ -146,22 +153,10 @@
                     </ul>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <div class="copyright">
-                    © 2026 NB Engineering Consulting. All rights reserved.
-                </div>
-                <ul class="legal-links">
-                    <li><a href="#">Terms & Conditions</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Sitemap</a></li>
-                    <li><a href="#">Cookies</a></li>
-                </ul>
-                <div class="back-to-top">
-                    <a href="#top">Back To Top</a>
-                </div>
-            </div>
         </div>
     </footer>
+    <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
+    <script src="js/mobile-menu.js"></script>
 </body>
 
 </html>

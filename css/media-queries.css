@@ -1,0 +1,576 @@
+/* ==========================================================================
+   MOBILE & RESPONSIVE MEDIA QUERIES
+   ========================================================================== */
+
+/* Large Tablets & Small Desktops (1200px) */
+@media (max-width: 1200px) {
+    .footer-top {
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+    }
+
+    .hero-title {
+        font-size: 64px;
+    }
+}
+
+/* Tablets (1024px) */
+@media (max-width: 1024px) {
+    .hero {
+        margin: 0 20px;
+        border-radius: 30px;
+        height: auto;
+        min-height: 500px;
+        padding: 60px 0;
+    }
+
+    .hero.hero-small {
+        min-height: 350px;
+    }
+
+    .hero-content {
+        padding: 0 40px;
+        text-align: center;
+        align-items: center;
+    }
+
+    .hero-description {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-button {
+        align-self: center;
+    }
+
+    .hero-video {
+        display: none;
+    }
+
+    .about-content-wrapper {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .contact-wrapper,
+    .project-item,
+    .project-item.flipped {
+        flex-direction: column;
+        gap: 50px;
+    }
+
+    .project-media {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        height: auto;
+    }
+
+    .about-image {
+        min-height: 400px;
+    }
+
+    .about-text-content {
+        padding: 60px 40px;
+        border-radius: 30px;
+    }
+
+    .services-grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 95%;
+    }
+
+    .service-card:nth-child(even) {
+        transform: translateY(0);
+    }
+
+    .service-card:hover {
+        transform: none !important;
+    }
+
+    .project-link-card {
+        aspect-ratio: 16 / 10;
+        height: auto;
+    }
+
+    .project-link-card .card-content {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent) !important;
+    }
+
+    .project-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 20px;
+    }
+
+    .service-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .outputs-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Landscape Phones & Small Tablets (900px) */
+@media (max-width: 900px) {
+    .brochure-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 60px;
+    }
+
+    .brochure-content {
+        margin: 0 auto;
+    }
+
+    .brochure-image-wrapper {
+        justify-content: center;
+    }
+
+    .illustration-placeholder {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+/* Phones (768px) */
+@media (max-width: 768px) {
+
+    /* Mobile Header */
+    .header-container {
+        padding: 0 20px;
+        height: 80px;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .nav-menu {
+        position: fixed;
+        top: 80px;
+        left: -100%;
+        width: 100%;
+        height: calc(100vh - 80px);
+        background-color: var(--white-color);
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 50px;
+        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .nav-menu li {
+        margin: 20px 0;
+    }
+
+    .nav-menu li a {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--black-color);
+        transition: 0.3s;
+    }
+
+    .mobile-contact-btn {
+        display: inline-block !important;
+        background-color: var(--black-color);
+        color: var(--white-color) !important;
+        padding: 15px 40px;
+        border-radius: 50px;
+        font-size: 18px !important;
+        margin-top: 30px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .header-button {
+        display: none;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    .mobile-menu-toggle span {
+        display: block;
+        width: 30px;
+        height: 3px;
+        background-color: var(--black-color);
+        border-radius: 3px;
+        transition: 0.3s ease;
+    }
+
+    .mobile-menu-toggle.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+
+    .mobile-menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .mobile-menu-toggle.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+
+    .logo img {
+        height: 45px;
+    }
+
+    .hero {
+        margin: 0 15px;
+        border-radius: 20px;
+        min-height: 400px;
+    }
+
+    .hero-title {
+        font-size: 40px;
+    }
+
+    .hero-description {
+        font-size: 18px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-button {
+        align-self: center;
+    }
+
+    .hero-content {
+        padding: 0 25px;
+        text-align: center;
+        align-items: center;
+    }
+
+    .section-title {
+        font-size: 28px;
+        margin-bottom: 25px;
+    }
+
+    .project-title {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+
+    .project-description {
+        font-size: 15px;
+        margin-bottom: 25px;
+    }
+
+    .project-details {
+        gap: 20px;
+        padding: 20px 0;
+        margin: 25px 0;
+    }
+
+    .detail-value {
+        font-size: 15px;
+    }
+
+    .project-category {
+        min-height: auto;
+        padding-top: 30px;
+        padding-bottom: 30px;
+    }
+
+    .section-subtitle {
+        font-size: 13px;
+    }
+
+    .about-us,
+    .about-us-page,
+    .services-page,
+    .contact-simple {
+        padding: 60px 15px;
+    }
+
+    .projects-page {
+        padding: 0 15px;
+    }
+
+    .about-us-page .about-content-wrapper {
+        flex-direction: column-reverse;
+    }
+
+    .about-us-page .about-text-content {
+        border-radius: 20px 20px 0 0;
+    }
+
+    .about-text-content {
+        padding: 40px 25px;
+        border-radius: 0 0 20px 20px;
+        background-color: var(--light-gray);
+        margin: 0;
+    }
+
+    .about-cards {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .about-us-page .about-image {
+        border-radius: 0 0 20px 20px !important;
+    }
+
+    .about-image {
+        border-radius: 20px 20px 0 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        min-height: 300px;
+        display: block;
+    }
+
+    .hide-mobile {
+        display: none;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .service-detail-card {
+        padding: 30px 20px;
+        border-radius: 25px;
+    }
+
+    .outputs-section {
+        padding: 50px 20px;
+        border-radius: 30px;
+    }
+
+    .outputs-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-simple .contact-form-card,
+    .contact-form-card {
+        padding: 40px 25px;
+    }
+
+    .contact-form {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .form-group.full-width,
+    .submit-btn {
+        grid-column: span 1;
+    }
+
+    .contact-wrapper {
+        gap: 30px;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .contact-images {
+        display: none;
+    }
+
+    .contact-features {
+        margin: 30px 0;
+    }
+
+    .contact-features li {
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .footer-top {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding-bottom: 30px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .footer-logo,
+    .footer-column.links-column,
+    .footer-bottom {
+        display: none;
+    }
+
+    .footer-column.brand-column {
+        order: 3;
+    }
+
+    .footer-column.contact-column {
+        order: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .social-box {
+        order: 2;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .social-links-grid {
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .contact-item {
+        margin-bottom: 25px;
+        width: 100%;
+    }
+
+    .contact-link {
+        font-size: 18px;
+    }
+
+    /* Project items */
+    .project-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    /* Modal */
+    /* Cards & Hover Effects */
+    .service-card:nth-child(even),
+    .service-card:hover,
+    .service-card:nth-child(odd):hover,
+    .service-card:nth-child(even):hover {
+        transform: none !important;
+    }
+
+    .service-detail-card:hover {
+        transform: none !important;
+    }
+
+    .project-link-card {
+        aspect-ratio: 16 / 10;
+        height: auto;
+    }
+
+    .project-link-card:hover {
+        transform: none !important;
+    }
+
+    .project-link-card .card-content {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%) !important;
+    }
+
+    .project-link-card:hover .card-image-wrapper img {
+        transform: none !important;
+    }
+
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+    }
+
+    .modal-header-image {
+        aspect-ratio: 16 / 10;
+        height: auto;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .modal-description {
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .modal-info-item p {
+        font-size: 16px;
+    }
+
+    .modal-info-item h4 {
+        font-size: 12px;
+    }
+
+    .project-link-card .card-title {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .project-link-card .project-link {
+        font-size: 14px;
+    }
+
+    /* General Typography Reductions */
+    .service-card-title {
+        font-size: 20px;
+    }
+
+    .service-card-description,
+    .service-list li,
+    .output-item p {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .about-card-title {
+        font-size: 18px;
+    }
+
+    .about-card-text,
+    .about-card-list li {
+        font-size: 14px;
+    }
+
+    /* Prevent text overflow */
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    span,
+    a {
+        max-width: 100%;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+}
+
+/* Small Phones (480px) */
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 32px;
+    }
+
+    .hero-button {
+        padding: 14px 28px;
+        font-size: 16px;
+    }
+
+    .cta-button {
+        padding: 12px 24px;
+    }
+}

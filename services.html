@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Services – NB Engineering Consulting</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/media-queries.css">
 
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
@@ -29,19 +30,25 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="services.html">Services</a></li>
                     <li><a href="projects.html">Projects</a></li>
+                    <li><a href="contact.html" class="mobile-contact-btn">Contact Us</a></li>
                 </ul>
             </nav>
             <div class="header-button">
                 <a href="contact.html" class="cta-button">CONTACT US</a>
             </div>
+            <div class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
     </header>
 
     <main>
-        <section class="hero hero-small">
+        <section class="hero hero-small hero-services">
             <div class="hero-container">
                 <div class="hero-content">
-                    <span class="section-subtitle" style="color: var(--white-color);">[ Our Expertise ]</span>
+                    <span class="section-subtitle">[ Our Expertise ]</span>
                     <h1 class="hero-title">What We Do</h1>
                     <p class="hero-description">Civil, Infrastructure, and Environmental Engineering Consulting.</p>
                 </div>
@@ -169,9 +176,11 @@
                     <div class="social-box">
                         <h4 class="footer-title">Follow Us</h4>
                         <ul class="social-links-grid">
-                            <li><a href="#" title="Twitter"><img src="assets/images/icons/twitter.png" alt="X"></a></li>
-                            <li><a href="#" title="LinkedIn"><img src="assets/images/icons/linkedin.png" alt="IN"></a>
+                            <li><a href="https://www.linkedin.com" title="LinkedIn"><img
+                                        src="assets/images/social media/linkedin.png" alt="LinkedIn"></a>
                             </li>
+                            <li><a href="https://www.youtube.com/@nbengineeringNB" title="YouTube"><img
+                                        src="assets/images/social media/youtube.png" alt="YouTube"></a></li>
                         </ul>
                     </div>
                 </div>
@@ -207,22 +216,10 @@
                     </ul>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <div class="copyright">
-                    2026 NB Engineering Consulting. All rights reserved.
-                </div>
-                <ul class="legal-links">
-                    <li><a href="#">Terms & Conditions</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Sitemap</a></li>
-                    <li><a href="#">Cookies</a></li>
-                </ul>
-                <div class="back-to-top">
-                    <a href="#top">Back To Top</a>
-                </div>
-            </div>
         </div>
     </footer>
+    <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
+    <script src="js/mobile-menu.js"></script>
 </body>
 
 </html>

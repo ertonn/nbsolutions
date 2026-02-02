@@ -47,4 +47,23 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         })
         .catch(error => console.error('Error fetching projects:', error));
+
+    // Floating Phone Logic
+    const floatingPhone = document.getElementById('floatingPhone');
+    const projectsSection = document.querySelector('.projects');
+
+    if (floatingPhone && projectsSection) {
+        window.addEventListener('scroll', function () {
+            const sectionRect = projectsSection.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+
+            // Show when the bottom of the projects section is reached 
+            // or when we're near the bottom of the page
+            if (sectionRect.bottom < windowHeight || (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                floatingPhone.classList.add('show');
+            } else {
+                floatingPhone.classList.remove('show');
+            }
+        });
+    }
 });

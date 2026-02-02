@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
         for (const [categoryName, categoryProjects] of Object.entries(categories)) {
             const categorySection = document.createElement('div');
             categorySection.className = 'project-category';
+            categorySection.id = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
             const categoryHeader = `
                 <div class="category-header">
@@ -118,4 +119,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Run on load
     handleHash();
+
+    // Floating Phone Logic
+    const floatingPhone = document.getElementById('floatingPhone');
+    const projectsContainer = document.querySelector('.projects-container');
+
+    if (floatingPhone && projectsContainer) {
+        window.addEventListener('scroll', function () {
+            const containerRect = projectsContainer.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+
+            // Show when the bottom of the projects container is reached 
+            // or when we're near the bottom of the page
+            if (containerRect.bottom < windowHeight || (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                floatingPhone.classList.add('show');
+            } else {
+                floatingPhone.classList.remove('show');
+            }
+        });
+    }
 });

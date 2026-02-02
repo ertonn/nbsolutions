@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard – NB Engineering Consulting</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/media-queries.css">
+    <style>
+        .admin-login-wrapper {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--light-gray);
+        }
+
+        .admin-card {
+            background: var(--white-color);
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .admin-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .admin-header img {
+            height: 60px;
+            margin-bottom: 20px;
+        }
+
+        .admin-dashboard {
+            display: none;
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        .project-form {
+            background: var(--white-color);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 50px;
+            display: none;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--black-color);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .admin-project-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .admin-project-item {
+            background: var(--white-color);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .admin-project-info h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .admin-project-info p {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-delete {
+            background: #ff4d4d;
+            color: white;
+        }
+
+        .btn-edit {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .admin-logout {
+            color: #ff4d4d;
+            cursor: pointer;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="admin-login-wrapper">
+        <div class="admin-card">
+            <div class="admin-header">
+                <img src="assets/images/Logo NB.png" alt="NB Construction">
+                <h2>Admin Login</h2>
+            </div>
+            <div class="form-group">
+                <label>Access Password</label>
+                <input type="password" id="adminPassword" placeholder="Enter password">
+            </div>
+            <button onclick="checkPassword()" class="cta-button" style="width: 100%; margin-top: 20px;">LOGIN TO
+                DASHBOARD</button>
+            <p id="loginError" style="color: red; margin-top: 15px; text-align: center; display: none;">Incorrect
+                password. Please try again.</p>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard">
+        <div class="dashboard-header">
+            <div>
+                <h1>Project Management</h1>
+                <p>Welcome back, Administrator</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 30px;">
+                <button onclick="toggleProjectForm()" class="cta-button">+ ADD NEW PROJECT</button>
+                <span class="admin-logout" onclick="logout()">Logout</span>
+            </div>
+        </div>
+
+        <!-- Add/Edit Form -->
+        <div id="projectForm" class="project-form">
+            <h2 id="formTitle" style="margin-bottom: 30px;">Add New Project</h2>
+            <form id="actualForm" onsubmit="saveProject(event)">
+                <input type="hidden" id="editId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>Project Title</label>
+                        <input type="text" id="projectTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="projectCategory" required>
+                            <option value="Railway Projects">Railway Projects</option>
+                            <option value="Water Supply & Hydraulics">Water Supply & Hydraulics</option>
+                            <option value="Roads & Civil Infrastructure">Roads & Civil Infrastructure</option>
+                            <option value="Buildings & Special Projects">Buildings & Special Projects</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Project Image</label>
+                        <input type="file" id="projectImage" accept="image/*" required>
+                        <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">Image
+                            will be saved to: assets/images/different categories/projects/</small>
+                        <input type="hidden" id="projectImagePath">
+                    </div>
+                    <div class="form-group">
+                        <label>Client</label>
+                        <input type="text" id="projectClient" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="text" id="projectYear" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="projectLocation">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="projectStatus">
+                            <option value="Completed">Completed</option>
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Planned">Planned</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Description</label>
+                        <textarea id="projectDescription" rows="8" required
+                            placeholder="Enter project description. Use bullet points by starting lines with '- ' or create numbered lists with '1. ', '2. ', etc."></textarea>
+                        <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">
+                            Formatting tips: Start lines with "- " for bullets, or "1. " for numbered lists. Line breaks
+                            will be preserved.
+                        </small>
+                    </div>
+                </div>
+                <div style="margin-top: 30px; display: flex; gap: 15px;">
+                    <button type="submit" class="cta-button">SAVE PROJECT</button>
+                    <button type="button" onclick="toggleProjectForm()" class="cta-button"
+                        style="background: var(--light-gray); color: var(--black-color);">CANCEL</button>
+                </div>
+            </form>
+        </div>
+
+        <h2>Current Projects</h2>
+        <div id="adminProjectList" class="admin-project-list">
+            <!-- Projects will appear here -->
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

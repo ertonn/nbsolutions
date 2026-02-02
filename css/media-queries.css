@@ -298,6 +298,10 @@
         padding-bottom: 30px;
     }
 
+    .entry-text {
+        opacity: 0.95;
+    }
+
     .section-subtitle {
         font-size: 13px;
     }

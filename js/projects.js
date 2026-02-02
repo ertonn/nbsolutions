@@ -1,16 +1,30 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Load projects from JSON file
-    fetch('js/projects-data.json')
-        .then(response => response.json())
-        .then(data => {
-            renderProjects(data);
-            setupAdminLink(data);
-        })
-        .catch(error => {
-            console.error('Error loading projects:', error);
-            // Fallback content if fetch fails (e.g., local testing without server)
-            // You might want to include the data directly here if file system access is restricted
-        });
+    const STORAGE_KEY = "nb_projects_data";
+
+    // Load projects from Storage or JSON
+    const localData = localStorage.getItem(STORAGE_KEY);
+    if (localData) {
+        const data = JSON.parse(localData);
+        renderProjects(data);
+        setupAdminLink(data);
+    } else {
+        fetch('js/projects-data.json')
+            .then(response => response.json())
+            .then(data => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                renderProjects(data);
+                setupAdminLink(data);
+            })
+            .catch(error => console.error('Error loading projects:', error));
+    }
+
+    // Helper to get image source (checks localStorage for base64, otherwise uses path)
+    function getImageSrc(imagePath) {
+        if (!imagePath) return '';
+        const filename = imagePath.split('/').pop();
+        const storedImage = localStorage.getItem(`img_${filename}`);
+        return storedImage || imagePath;
+    }
 
     function renderProjects(projects) {
         const categories = {};
@@ -45,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 card.id = `project-${project.id}`;
                 card.innerHTML = `
                     <div class="card-image-wrapper">
-                        <img src="${project.image}" alt="${project.title}" loading="lazy">
+                        <img src="${getImageSrc(project.image)}" alt="${project.title}" loading="lazy">
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">${project.title}</h3>
@@ -63,26 +77,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Modal Logic
     window.openProjectModal = function (projectId) {
-        fetch('js/projects-data.json')
-            .then(response => response.json())
-            .then(projects => {
-                const project = projects.find(p => p.id === projectId);
-                if (project) {
-                    const modal = document.getElementById('projectModal');
+        const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+            const modal = document.getElementById('projectModal');
 
-                    // Populate Modal Data
-                    document.getElementById('modalTitle').textContent = project.title;
-                    document.getElementById('modalCategory').textContent = project.category;
-                    document.getElementById('modalDescription').innerHTML = project.description;
-                    document.getElementById('modalClient').textContent = project.client;
-                    document.getElementById('modalYear').textContent = project.year;
+            // Populate Modal Data
+            document.getElementById('modalTitle').textContent = project.title;
+            document.getElementById('modalCategory').textContent = project.category;
+            document.getElementById('modalDescription').innerHTML = project.description;
+            document.getElementById('modalClient').textContent = project.client;
+            document.getElementById('modalYear').textContent = project.year;
 
-                    document.getElementById('modalImage').src = project.image;
+            document.getElementById('modalImage').src = getImageSrc(project.image);
 
-                    modal.classList.add('show');
-                    document.body.style.overflow = 'hidden'; // Prevent scrolling
-                }
-            });
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
     };
 
     // Close Modal Logic
@@ -122,20 +133,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Floating Phone Logic
     const floatingPhone = document.getElementById('floatingPhone');
-    const projectsContainer = document.querySelector('.projects-container');
+    const modal = document.getElementById('projectModal');
 
-    if (floatingPhone && projectsContainer) {
-        window.addEventListener('scroll', function () {
-            const containerRect = projectsContainer.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
+    const checkScroll = () => {
+        const projectCategories = document.querySelectorAll('.project-category');
+        const windowHeight = window.innerHeight;
+        let showButton = false;
 
-            // Show when the bottom of the projects container is reached 
-            // or when we're near the bottom of the page
-            if (containerRect.bottom < windowHeight || (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-                floatingPhone.classList.add('show');
-            } else {
-                floatingPhone.classList.remove('show');
+        projectCategories.forEach(cat => {
+            const rect = cat.getBoundingClientRect();
+            // If the bottom of any category has been reached/passed
+            if (rect.bottom < windowHeight + 100) {
+                showButton = true;
             }
         });
+
+        // Fallback: Near page bottom
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+            showButton = true;
+        }
+
+        if (showButton) {
+            floatingPhone.classList.add('show');
+        }
+    };
+
+    if (floatingPhone) {
+        window.addEventListener('scroll', checkScroll);
+
+        // Also check inside modal if it's open
+        if (modal) {
+            modal.addEventListener('scroll', function () {
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    const rect = modalContent.getBoundingClientRect();
+                    // If modal is scrolled near the bottom
+                    if (modal.scrollTop + modal.offsetHeight >= modal.scrollHeight - 50) {
+                        floatingPhone.classList.add('show');
+                    }
+                }
+            });
+        }
     }
 });

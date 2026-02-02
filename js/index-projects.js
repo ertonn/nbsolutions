@@ -1,68 +1,98 @@
 document.addEventListener('DOMContentLoaded', function () {
-    fetch('js/projects-data.json')
-        .then(response => response.json())
-        .then(projects => {
-            const projectsList = document.querySelector('.projects-list');
-            if (!projectsList) return;
+    const STORAGE_KEY = "nb_projects_data";
 
-            // Shuffle and pick 2 projects
-            const shuffled = projects.sort(() => 0.5 - Math.random());
-            const selected = shuffled.slice(0, 2);
+    // Helper to get image source (checks localStorage for base64, otherwise uses path)
+    function getImageSrc(imagePath) {
+        if (!imagePath) return '';
+        const filename = imagePath.split('/').pop();
+        const storedImage = localStorage.getItem(`img_${filename}`);
+        return storedImage || imagePath;
+    }
 
-            // Clear existing projects
-            projectsList.innerHTML = '';
+    function renderIndexProjects(projects) {
+        const projectsList = document.querySelector('.projects-list');
+        if (!projectsList) return;
 
-            selected.forEach((project, index) => {
-                const projectItem = document.createElement('div');
-                projectItem.className = 'project-item' + (index % 2 !== 0 ? ' flipped' : '');
+        // Shuffle and pick 2 projects
+        const shuffled = [...projects].sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 2);
 
-                // Extract a plain text version of the description if it's HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = project.description;
-                const plainDescription = tempDiv.innerText || tempDiv.textContent;
-                // Truncate description for the index page if needed
-                const truncatedDescription = plainDescription.length > 200 ? plainDescription.substring(0, 197) + '...' : plainDescription;
+        // Clear existing projects
+        projectsList.innerHTML = '';
 
-                projectItem.innerHTML = `
-                    <div class="project-media">
-                        <img src="${project.image}" alt="${project.title}">
-                    </div>
-                    <div class="project-content">
-                        <h3 class="project-title">${project.title}</h3>
-                        <p class="project-description">${truncatedDescription}</p>
-                        <div class="project-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Client</span>
-                                <span class="detail-value">${project.client}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Date</span>
-                                <span class="detail-value">${project.year}</span>
-                            </div>
+        selected.forEach((project, index) => {
+            const projectItem = document.createElement('div');
+            projectItem.className = 'project-item' + (index % 2 !== 0 ? ' flipped' : '');
+
+            // Extract a plain text version of the description if it's HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = project.description;
+            const plainDescription = tempDiv.innerText || tempDiv.textContent;
+            // Truncate description for the index page if needed
+            const truncatedDescription = plainDescription.length > 200 ? plainDescription.substring(0, 197) + '...' : plainDescription;
+
+            projectItem.innerHTML = `
+                <div class="project-media">
+                    <img src="${getImageSrc(project.image)}" alt="${project.title}">
+                </div>
+                <div class="project-content">
+                    <h3 class="project-title">${project.title}</h3>
+                    <p class="project-description">${truncatedDescription}</p>
+                    <div class="project-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Client</span>
+                            <span class="detail-value">${project.client}</span>
                         </div>
-                        <a href="projects.html#project-${project.id}" class="project-link">View Details</a>
+                        <div class="detail-item">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">${project.year}</span>
+                        </div>
                     </div>
-                `;
-                projectsList.appendChild(projectItem);
-            });
-        })
-        .catch(error => console.error('Error fetching projects:', error));
+                    <a href="projects.html#project-${project.id}" class="project-link">View Details</a>
+                </div>
+            `;
+            projectsList.appendChild(projectItem);
+        });
+    }
+
+    const localData = localStorage.getItem(STORAGE_KEY);
+    if (localData) {
+        renderIndexProjects(JSON.parse(localData));
+    } else {
+        fetch('js/projects-data.json')
+            .then(response => response.json())
+            .then(projects => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+                renderIndexProjects(projects);
+            })
+            .catch(error => console.error('Error fetching projects:', error));
+    }
 
     // Floating Phone Logic
     const floatingPhone = document.getElementById('floatingPhone');
     const projectsSection = document.querySelector('.projects');
 
-    if (floatingPhone && projectsSection) {
+    if (floatingPhone) {
         window.addEventListener('scroll', function () {
-            const sectionRect = projectsSection.getBoundingClientRect();
+            const projectItems = document.querySelectorAll('.project-item');
             const windowHeight = window.innerHeight;
+            let showButton = false;
 
-            // Show when the bottom of the projects section is reached 
-            // or when we're near the bottom of the page
-            if (sectionRect.bottom < windowHeight || (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+            projectItems.forEach(item => {
+                const rect = item.getBoundingClientRect();
+                // If the bottom of any project item is visible or passed
+                if (rect.bottom < windowHeight) {
+                    showButton = true;
+                }
+            });
+
+            // Fallback: Also show when near the true bottom of the page
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                showButton = true;
+            }
+
+            if (showButton) {
                 floatingPhone.classList.add('show');
-            } else {
-                floatingPhone.classList.remove('show');
             }
         });
     }

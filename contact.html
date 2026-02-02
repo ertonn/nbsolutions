@@ -4,8 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us – NB Engineering Consulting</title>
+    <title>Contact Us – NB Engineering Consulting</title>
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="assets/favicon_io/favicon.ico">
 </head>
 
 <body>
@@ -31,41 +38,59 @@
     </header>
 
     <main>
-        <section class="hero hero-small">
-            <div class="hero-container">
-                <div class="hero-content">
-                    <span class="section-subtitle" style="color: var(--white-color);">[ Our Identity ]</span>
-                    <h1 class="hero-title">Who We Are</h1>
-                    <p class="hero-description">Civil, Infrastructure, and Environmental Engineering Consulting.</p>
-                </div>
+
+
+        <!-- Call Section -->
+        <section class="call-section">
+            <div class="container">
+                <h2 class="section-title">Have a project in mind? Call us now!</h2>
+                <a href="tel:+355682060415" class="call-icon-link">
+                    <img src="assets/images/icons/phone.png" alt="Call Now" class="call-icon-primary">
+                </a>
+                <br>
+                <a href="tel:+355682060415" class="cta-button call-button-large">
+                    <span>+355 68 206 0415</span>
+                </a>
+                <p class="call-subtext">Or fill out the form below and we will get back to you.</p>
             </div>
         </section>
 
-        <section class="about-us-page">
-            <div class="about-container">
-                <div class="about-content-wrapper">
-                    <div class="about-image">
-                        <img src="assets/images/hero/background.jpg" alt="NB Engineering Team">
-                    </div>
-                    <div class="about-text-content">
-                        <div class="about-header">
-                            <span class="section-subtitle">[ Engineering Consulting ]</span>
-                            <h2 class="section-title">Civil – Infrastructure – Environment</h2>
+        <!-- Simplified Contact Form Section -->
+        <section class="contact-simple">
+            <div class="contact-simple-container">
+                <div class="contact-form-card">
+                    <form action="#" class="contact-form">
+                        <div class="form-group">
+                            <label for="full-name">Full Name *</label>
+                            <input type="text" id="full-name" name="full-name" placeholder="John Doe" required>
                         </div>
-                        <div class="about-main-text">
-                            <p class="about-description">
-                                <strong>NB Engineering Consulting</strong> is an independent engineering consultancy
-                                providing specialized services in transport infrastructure, railway engineering, water
-                                supply systems, and civil works.
-                            </p>
-                            <p class="about-description">
-                                The company supports international and local clients through all project stages, from
-                                feasibility and hydraulic modelling to detailed design, tender documentation, and
-                                technical reviews, with a strong focus on constructability and compliance with
-                                international standards.
-                            </p>
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" placeholder="john@example.com" required>
                         </div>
-                    </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number *</label>
+                            <input type="tel" id="email" name="phone" placeholder="+1 (555) 000-0000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="project-type">Project Type *</label>
+                            <select id="project-type" name="project-type" required>
+                                <option value="" disabled selected>Select</option>
+                                <option value="residential">Residential</option>
+                                <option value="commercial">Commercial</option>
+                                <option value="industrial">Industrial</option>
+                                <option value="renovation">Renovation</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5"
+                                placeholder="Tell us about your project..."></textarea>
+                        </div>
+                        <div class="form-group full-width" style="margin-top: 20px;">
+                            <button type="submit" class="cta-button submit-btn">Send Message</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>
@@ -81,9 +106,11 @@
                     <div class="social-box">
                         <h4 class="footer-title">Follow Us</h4>
                         <ul class="social-links-grid">
-                            <li><a href="#" title="Twitter"><img src="assets/images/icons/twitter.png" alt="X"></a></li>
-                            <li><a href="#" title="LinkedIn"><img src="assets/images/icons/linkedin.png" alt="IN"></a>
+                            <li><a href="https://www.linkedin.com" title="LinkedIn"><img
+                                        src="assets/images/social media/linkedin.png" alt="LinkedIn"></a>
                             </li>
+                            <li><a href="https://www.youtube.com/@nbengineeringNB" title="YouTube"><img
+                                        src="assets/images/social media/youtube.png" alt="YouTube"></a></li>
                         </ul>
                     </div>
                 </div>

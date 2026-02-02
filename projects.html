@@ -21,15 +21,7 @@
                     <li><a href="index.html">Home</a></li>
                     <li><a href="about.html">About</a></li>
                     <li><a href="services.html">Services</a></li>
-                    <li class="dropdown">
-                        <a href="projects.html">Projects <img src="./assets/misc/expand.png" alt="Expand"
-                                class="dropdown-arrow" /></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="residential.html">Residential</a></li>
-                            <li><a href="commercial.html">Commercial</a></li>
-                            <li><a href="industrial.html">Industrial</a></li>
-                        </ul>
-                    </li>
+                    <li><a href="projects.html">Projects</a></li>
                 </ul>
             </nav>
             <div class="header-button">
@@ -39,20 +31,8 @@
     </header>
 
     <main>
-        <section class="hero hero-small">
-            <div class="hero-container">
-                <div class="hero-content">
-                    <span class="section-subtitle" style="color: var(--white-color);">[ Our Portfolio ]</span>
-                    <h1 class="hero-title">Engineering Masterpieces</h1>
-                    <p class="hero-description">Delivering complex infrastructure solutions with precision and
-                        international standards.</p>
-                </div>
-            </div>
-        </section>
-
         <section class="projects-page">
             <div class="projects-container">
-
                 <!-- Railway Projects -->
                 <div class="project-category">
                     <div class="category-header">
@@ -144,8 +124,49 @@
 
             </div>
         </section>
-    </main>
+        <!-- Project Modal -->
+        <div id="projectModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <div class="modal-header-image">
+                    <img id="modalImage" src="assets/images/hero/background.jpg" alt="Project Image">
+                    <div
+                        style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <span id="modalCategory" class="modal-category">Category</span>
+                    <h2 id="modalTitle" class="modal-title">Project Title</h2>
 
+                    <div class="modal-info-grid">
+                        <div class="modal-info-item">
+                            <h4>Client</h4>
+                            <p id="modalClient">Client Name</p>
+                        </div>
+                        <div class="modal-info-item">
+                            <h4>Year</h4>
+                            <p id="modalYear">2023</p>
+                        </div>
+                        <div class="modal-info-item">
+                            <h4>Location</h4>
+                            <p>Albania</p>
+                        </div>
+                        <div class="modal-info-item">
+                            <h4>Status</h4>
+                            <p>Completed</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-description">
+                        <p id="modalDescription">Project description goes here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="js/projects.js"></script>
+    </main>
     <footer class="main-footer">
         <div class="footer-container">
             <div class="footer-top">
@@ -156,7 +177,8 @@
                     <div class="social-box">
                         <h4 class="footer-title">Follow Us</h4>
                         <ul class="social-links-grid">
-                            <li><a href="#" title="Twitter"><img src="assets/images/icons/twitter.png" alt="X"></a></li>
+                            <li><a href="#" title="Twitter"><img src="assets/images/icons/twitter.png" alt="X"></a>
+                            </li>
                             <li><a href="#" title="LinkedIn"><img src="assets/images/icons/linkedin.png" alt="IN"></a>
                             </li>
                         </ul>

@@ -176,7 +176,7 @@ nav {
     font-size: 54px;
     font-weight: 800;
     color: var(--black-color);
-    line-height: 1.2;
+    line-height: 1.3;
     max-width: 800px;
     margin-bottom: 40px;
 }
@@ -515,6 +515,7 @@ nav {
 .project-title {
     font-size: 42px;
     font-weight: 800;
+    line-height: 1.4;
     margin-bottom: 25px;
 }
 
@@ -830,7 +831,7 @@ nav {
 
 /* Projects Page Styles */
 .projects-page {
-    padding: 120px 40px;
+    padding: 30px 40px;
     background-color: var(--white-color);
 }
 
@@ -853,13 +854,15 @@ nav {
 
 .project-link-card {
     background-color: var(--light-gray);
-    padding: 40px;
+    padding: 0;
+    /* Removed padding to allow full-width image */
     border-radius: 30px;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     border: 1px solid transparent;
+    overflow: hidden;
 }
 
 .project-link-card:hover {
@@ -867,6 +870,31 @@ nav {
     border-color: var(--accent-color);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
     transform: translateY(-5px);
+}
+
+.card-image-wrapper {
+    height: 250px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.card-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.project-link-card:hover .card-image-wrapper img {
+    transform: scale(1.05);
+}
+
+.card-content {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
 }
 
 .project-link-card .card-title {
@@ -880,6 +908,7 @@ nav {
 .project-link-card .project-link {
     color: var(--industrial-navy);
     border-bottom-color: var(--industrial-navy);
+    align-self: flex-start;
 }
 
 .project-link-card .project-link:hover {
@@ -1351,5 +1380,243 @@ html {
 
     .brochure-image-wrapper {
         justify-content: center;
+    }
+}
+
+/* Contact Page New Sections */
+.section-title-only {
+    padding: 120px 0 40px;
+    text-align: center;
+    background-color: var(--secondary-color);
+}
+
+.section-title-only .section-subtitle {
+    color: var(--white-color);
+    opacity: 0.8;
+}
+
+.section-title-only .section-title {
+    color: var(--white-color);
+    margin: 0 auto;
+}
+
+.call-section {
+    padding: 60px 40px 80px;
+    text-align: center;
+    background-color: var(--white-color);
+}
+
+.call-section .section-title {
+    font-size: 32px;
+    margin-bottom: 30px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.call-button-large {
+    font-size: 24px;
+    padding: 15px 50px;
+    display: inline-block;
+    border-radius: 50px;
+    margin-bottom: 25px;
+    min-width: 300px;
+    /* Removed flex column styles since icon is outside */
+}
+
+/* New Big Icon Styles */
+.call-icon-link {
+    display: inline-block;
+    margin-bottom: 15px;
+    transition: transform 0.3s ease;
+}
+
+.call-icon-link:hover {
+    transform: scale(1.1);
+}
+
+.call-icon-primary {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    /* Original color (dark) should work on white bg */
+}
+
+.call-subtext {
+    margin-top: 20px;
+    font-size: 18px;
+    color: var(--text-color);
+}
+
+.contact-simple {
+    padding: 0 40px 120px;
+}
+
+.contact-simple-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.contact-simple .contact-form-card {
+    padding: 60px;
+    border-radius: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.contact-simple .contact-form-card .submit-btn {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Modal CSS */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    display: block;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: var(--white-color);
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 800px;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.4s ease-out;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close-modal {
+    color: var(--white-color);
+    background: var(--industrial-navy);
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    background: var(--accent-color);
+    transform: rotate(90deg);
+}
+
+.modal-header-image {
+    width: 100%;
+    height: 300px;
+    background-color: var(--industrial-navy);
+    position: relative;
+}
+
+.modal-header-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 40px;
+}
+
+.modal-category {
+    color: var(--accent-color);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.modal-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--black-color);
+    margin-bottom: 25px;
+    line-height: 1.2;
+}
+
+.modal-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.modal-info-item h4 {
+    font-size: 14px;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.modal-info-item p {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--black-color);
+}
+
+.modal-description {
+    font-size: 18px;
+    line-height: 1.8;
+    color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+
+    .modal-header-image {
+        height: 200px;
+    }
+
+    .modal-title {
+        font-size: 24px;
+    }
+
+    .modal-info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 }

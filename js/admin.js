@@ -121,6 +121,8 @@ function changePassword() {
     if (!p) { alert('Enter a new password'); return; }
     localStorage.setItem('nb_admin_pass', p);
     ADMIN_PASSWORD = p;
+    alert('Password updated (local only).');
+    document.getElementById('settings_admin_password').value = '';
 }
 
 // ---------------- Supabase auth & sync ----------------
@@ -191,9 +193,6 @@ async function onSignedIn(user) {
         if (remoteProjects && Array.isArray(remoteProjects)) { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteProjects)); }
         renderAdminProjects(); renderServicesAdmin(); updateDashboardCounts();
     } catch (e) { console.error('onSignedIn sync error', e); }
-}
-    alert('Password updated (local only).');
-    document.getElementById('settings_admin_password').value = '';
 }
 
 function updateDashboardCounts() {

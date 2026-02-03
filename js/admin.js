@@ -131,37 +131,35 @@ function changePassword() {
 // ---------------- Supabase auth & sync ----------------
 function initSupabase() {
     try {
-        // Gather possible client-safe keys from multiple places (window, localStorage, meta tags)
+        // Gather possible client-safe keys from multiple places (window, meta tags)
         const metaUrl = (document.querySelector('meta[name="supabase-url"]') && document.querySelector('meta[name="supabase-url"]').content) || '';
         const metaKey = (document.querySelector('meta[name="supabase-anon-key"]') && document.querySelector('meta[name="supabase-anon-key"]').content) || '';
 
-        // window envs that might be injected at build time
         const w = window || {};
-        const candidates = {
-            NEXT_PUBLIC_URL: w.NEXT_PUBLIC_SUPABASE_URL || w.NEXT_PUBLIC_SUPABASE_URL || null,
-            NEXT_PUBLIC_KEY: w.NEXT_PUBLIC_SUPABASE_ANON_KEY || w.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
+        const detection = {
+            NEXT_PUBLIC_SUPABASE_URL: w.NEXT_PUBLIC_SUPABASE_URL || null,
+            NEXT_PUBLIC_SUPABASE_ANON_KEY: w.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
             SUPABASE_URL: w.SUPABASE_URL || null,
             SUPABASE_ANON_KEY: w.SUPABASE_ANON_KEY || null,
-            SUPABASE_PUBLISHABLE_KEY: w.SUPABASE_PUBLISHABLE_KEY || w.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || null,
-            // Service role / DB keys should not be used client-side
-            SERVICE_ROLE: w.SUPABASE_SERVICE_ROLE_KEY || null,
-            POSTGRES_LIST: {
-                POSTGRES_URL: w.POSTGRES_URL || null,
-                POSTGRES_PRISMA_URL: w.POSTGRES_PRISMA_URL || null,
-                POSTGRES_URL_NON_POOLING: w.POSTGRES_URL_NON_POOLING || null,
-                POSTGRES_USER: w.POSTGRES_USER || null,
-                POSTGRES_HOST: w.POSTGRES_HOST || null,
-                POSTGRES_PASSWORD: w.POSTGRES_PASSWORD || null,
-                POSTGRES_DATABASE: w.POSTGRES_DATABASE || null
-            }
+            SUPABASE_SERVICE_ROLE_KEY: w.SUPABASE_SERVICE_ROLE_KEY || null,
+            META_SUPABASE_URL: metaUrl || null,
+            META_SUPABASE_ANON_KEY: metaKey || null
         };
 
-        // Prefer explicit NEXT_PUBLIC*, then localStorage, then meta tags, then generic SUPABASE_ vars
-        const url = candidates.NEXT_PUBLIC_URL || localStorage.getItem('supabase_url') || metaUrl || candidates.SUPABASE_URL || '';
-        const key = candidates.NEXT_PUBLIC_KEY || localStorage.getItem('supabase_anon_key') || metaKey || candidates.SUPABASE_ANON_KEY || candidates.SUPABASE_PUBLISHABLE_KEY || '';
+        // Diagnostic: show which envs are present (values masked)
+        try {
+            const mask = v => v ? (typeof v === 'string' && v.length > 12 ? v.slice(0,6) + '…' + v.slice(-4) : 'set') : null;
+            const diag = Object.keys(detection).reduce((acc, k) => { acc[k] = mask(detection[k]); return acc; }, {});
+            console.info('Supabase env detection:', diag);
+            console.table(Object.keys(detection).map(k=>({key:k, present: !!detection[k]})));
+        } catch(e){}
+
+        // Prefer explicit NEXT_PUBLIC* then meta tags then generic SUPABASE_* vars
+        const url = w.NEXT_PUBLIC_SUPABASE_URL || metaUrl || w.SUPABASE_URL || '';
+        const key = w.NEXT_PUBLIC_SUPABASE_ANON_KEY || metaKey || w.SUPABASE_ANON_KEY || w.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 
         if (!url || !key) {
-            console.warn('Supabase keys not found');
+            console.warn('Supabase keys not found — ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set and the site is rebuilt/deployed. Vercel server vars must be NEXT_PUBLIC_* to be available to the client.');
             supabaseClient = null; return;
         }
 
@@ -493,12 +491,56 @@ async function saveProject(e) {
     };
 
     try {
-        if (supabaseClient) {
-            const saved = await saveProjectRemote(payload, fileBlob);
-            // Update local mirror
+        // Try server API first
+        let saved = null;
+        try {
+            saved = await saveProjectRemote(payload, fileBlob);
+        } catch (e_api) {
+            // If API failed, try Supabase client if available
+            if (supabaseClient) {
+                try {
+                    // upload image to storage when possible
+                    if (fileBlob && supabaseClient && supabaseClient.storage) {
+                        const bucket = 'site-assets';
+                        const filename = Date.now() + '-' + (fileBlob.name || 'upload.jpg');
+                        const { data: up, error: upErr } = await supabaseClient.storage.from(bucket).upload('projects/' + filename, fileBlob, { upsert: true });
+                        if (upErr) throw upErr;
+                        const { data: pub, error: pubErr } = await supabaseClient.storage.from(bucket).getPublicUrl('projects/' + filename);
+                        if (pubErr) throw pubErr;
+                        payload.image = pub && pub.publicUrl ? pub.publicUrl : (pub && pub.data && pub.data.publicUrl ? pub.data.publicUrl : (`assets/uploads/${filename}`));
+                    }
+                    if (payload.id) {
+                        const { data, error } = await supabaseClient.from('projects').update(payload).eq('id', payload.id).select().single();
+                        if (error) throw error;
+                        saved = data;
+                    } else {
+                        const toInsert = Object.assign({}, payload);
+                        delete toInsert.id;
+                        const { data, error } = await supabaseClient.from('projects').insert(toInsert).select().single();
+                        if (error) throw error;
+                        saved = data;
+                    }
+                } catch (e_sup) {
+                    // If supabase also fails, rethrow original API error
+                    throw e_api;
+                }
+            } else {
+                // no server and no supabase: rethrow to trigger local fallback
+                throw e_api;
+            }
+        }
+
+        if (saved) {
             const projects = getProjects();
-            const idx = projects.findIndex(p=>p.id === (saved && saved.id));
-            const localObj = { id: saved.id, title: saved.title, category: saved.category, image: saved.image, description: saved.description, plainDescription: saved.plain_description };
+            const idx = projects.findIndex(p => p.id === (saved && saved.id));
+            const localObj = {
+                id: saved.id,
+                title: saved.title,
+                category: saved.category,
+                image: saved.image || saved.image_url || saved.image_path,
+                description: saved.description,
+                plainDescription: saved.plain_description || saved.plainDescription
+            };
             if (idx !== -1) projects[idx] = localObj; else projects.push(localObj);
             saveProjects(projects);
         } else {
@@ -575,13 +617,23 @@ async function editProject(id) {
 
 async function deleteProject(id) {
     if (!confirm("Are you sure you want to delete this project?")) return;
-    if (!supabaseClient) {
-        alert('No server available: deletion will be local only.');
-    }
     try {
-        if (supabaseClient) {
+        try {
+            // Try server API delete first
             await deleteProjectRemote(id);
+        } catch (e_api) {
+            // If API failed and Supabase client exists, try Supabase delete
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+                    if (error) throw error;
+                } catch (e_sup) { throw e_api; }
+            } else {
+                // No server - confirm local deletion
+                if (!confirm('No server available: deletion will be local only. Continue?')) return;
+            }
         }
+
         let projects = getProjects();
         projects = projects.filter(p => p.id !== id);
         saveProjects(projects);
@@ -758,16 +810,37 @@ async function saveContent() {
         if (supabaseClient) {
             // save into site_content table under key 'site_content'
             const payload = { key: 'site_content', value: d, updated_at: new Date() };
-            const { data, error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key' });
+            const { data, error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key', returning: 'representation' });
             if (error) throw error;
+            // If Supabase returned a representation, sync local admin content
+            if (data && data[0] && data[0].value) {
+                window.__adminContent = data[0].value;
+            } else {
+                window.__adminContent = d;
+            }
             alert('Content saved to Supabase.');
         } else {
-            const res = await fetch('/api/content', {
+            let res = await fetch('/api/content', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
                 body: JSON.stringify(d)
             });
+            if (!res.ok) {
+                res = await fetch('/api.php?action=content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
+                    body: JSON.stringify(d)
+                });
+            }
             if (res.ok) {
+                try {
+                    const serverJson = await res.json();
+                    if (serverJson && Object.keys(serverJson).length) {
+                        window.__adminContent = serverJson;
+                        // keep local variable in-sync
+                        for (const k in serverJson) d[k] = serverJson[k];
+                    }
+                } catch (e) { /* ignore parse */ }
                 alert('Content saved to server.');
             } else {
                 let txt = '';
@@ -802,7 +875,10 @@ async function saveContentWithConfirm() {
 async function testServerSave() {
     try {
         const d = window.__adminContent || {};
-        const res = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+        let res = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD }, body: JSON.stringify(d) });
+        if (!res.ok) {
+            res = await fetch('/api.php?action=content', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD }, body: JSON.stringify(d) });
+        }
         const text = await res.text();
         const statusEl = document.getElementById('serverSaveStatus');
         if (res.ok) {
@@ -819,6 +895,20 @@ async function testServerSave() {
     }
 }
 
+async function pingServer() {
+    const statusEl = document.getElementById('serverSaveStatus');
+    try {
+        const res = await fetch('/api/ping', { headers: { 'X-Admin-Pass': localStorage.getItem('nb_admin_pass') || '' } });
+        if (res && res.ok) { if (statusEl) statusEl.innerHTML = 'Server: <strong>OK</strong>'; }
+        else { if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No auth</strong>'; }
+    } catch (e) { if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No response</strong>'; }
+}
+
+// Ping server on admin open
+if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function(){ pingServer(); });
+}
+
 function exportContent() {
     const data = window.__adminContent || {};
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -830,14 +920,89 @@ function exportContent() {
 
 // fetch content object from Supabase site_content table
 async function fetchContentRemote() {
-    // guard: if we don't have a configured client, just return null
-    if (!supabaseClient) return null;
+    // Prefer direct Supabase client when available, otherwise try server-side API
+    if (supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
+            if (error) throw error;
+            return data ? data.value : null;
+        } catch(e){ console.error('fetchContentRemote error', e); return null; }
+    }
+
+    // Server API fallback: try friendly REST path, then fallback to PHP script variant for built-in PHP server
     try {
-        const { data, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
-        if (error) throw error;
-        return data ? data.value : null;
-    } catch(e){ console.error('fetchContentRemote error', e); return null; }
-} 
+        let res = await fetch('/api/content');
+        if (!res.ok) {
+            res = await fetch('/api.php?action=content');
+            if (!res.ok) throw new Error('Server responded ' + res.status);
+        }
+        return await res.json();
+    } catch (e) { console.error('fetchContentRemote server error', e); return null; }
+}
+
+// --- Server-side projects/content helpers (PHP API) ---
+async function fetchProjectsRemote() {
+    try {
+        let res = await fetch('/api/projects');
+        if (!res.ok) {
+            res = await fetch('/api.php?action=projects');
+            if (!res.ok) throw new Error('Server responded ' + res.status);
+        }
+        return await res.json();
+    } catch (e) { console.error('fetchProjectsRemote error', e); return null; }
+}
+
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function saveProjectRemote(payload, fileBlob) {
+    try {
+        const body = Object.assign({}, payload);
+        if (fileBlob) {
+            const dataUrl = await readFileAsDataURL(fileBlob);
+            body.imageBase64 = dataUrl;
+            body.imageFilename = fileBlob.name || 'upload.jpg';
+        }
+
+        let res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+            // try PHP-script fallback
+            res = await fetch('/api.php?action=projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
+                body: JSON.stringify(body)
+            });
+        }
+        if (!res.ok) {
+            const txt = await res.text(); throw new Error('Server error ' + res.status + ': ' + txt);
+        }
+        const json = await res.json();
+        // If server returns array (Supabase return), pick first element
+        if (Array.isArray(json) && json.length) return json[0];
+        return json;
+    } catch (e) { console.error('saveProjectRemote error', e); throw e; }
+}
+
+async function deleteProjectRemote(id) {
+    try {
+        let res = await fetch('/api/projects?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'X-Admin-Pass': ADMIN_PASSWORD } });
+        if (!res.ok) {
+            res = await fetch('/api.php?action=projects&id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'X-Admin-Pass': ADMIN_PASSWORD } });
+        }
+        if (!res.ok) throw new Error('Delete failed ' + res.status);
+        return true;
+    } catch (e) { console.error('deleteProjectRemote error', e); throw e; }
+}
 
 
 /* Services editing */
@@ -1220,8 +1385,15 @@ function createEmbedForVideo(url, height = 210) {
                 if (url) d['brochure1.pdf_path'] = url;
                 else { d['brochure1.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
             } else {
-                d['brochure1.pdf_path'] = `assets/${file.name}`;
-                alert(`Not signed in: please manually copy the PDF to assets/${file.name}`);
+                // try server API upload via base64 payload
+                try {
+                    const dataUrl = await readFileAsDataURL(file);
+                    d['brochure1_file'] = dataUrl;
+                    d['brochure1_file_name'] = file.name;
+                } catch (e) {
+                    d['brochure1.pdf_path'] = `assets/${file.name}`;
+                    alert(`Not signed in and upload failed: please manually copy the PDF to assets/${file.name}`);
+                }
             }
         } else {
             d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value;
@@ -1238,8 +1410,15 @@ function createEmbedForVideo(url, height = 210) {
                 if (url) d['brochure2.pdf_path'] = url;
                 else { d['brochure2.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
             } else {
-                d['brochure2.pdf_path'] = `assets/${file.name}`;
-                alert(`Not signed in: please manually copy the PDF to assets/${file.name}`);
+                // try server API upload via base64 payload
+                try {
+                    const dataUrl = await readFileAsDataURL(file);
+                    d['brochure2_file'] = dataUrl;
+                    d['brochure2_file_name'] = file.name;
+                } catch (e) {
+                    d['brochure2.pdf_path'] = `assets/${file.name}`;
+                    alert(`Not signed in and upload failed: please manually copy the PDF to assets/${file.name}`);
+                }
             }
         } else {
             d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;

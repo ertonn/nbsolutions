@@ -252,8 +252,14 @@
       function checkPassword() {
         const pass = document.getElementById('adminPassword').value;
         const error = document.getElementById('loginError');
-        const ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin';
-        if (pass === ADMIN_PASSWORD) {
+        const saved = localStorage.getItem('nb_admin_pass') || 'admin';
+        // Accept if matches saved local password
+        if (pass === saved) {
+          // persist the password (so client will send it to server endpoints)
+          localStorage.setItem('nb_admin_pass', pass);
+          // update runtime variable if admin.js already loaded
+          if (typeof window !== 'undefined' && typeof window.ADMIN_PASSWORD !== 'undefined') window.ADMIN_PASSWORD = pass;
+
           localStorage.setItem('admin_logged_in', 'true');
           // show dashboard if available
           if (typeof showDashboard === 'function') { showDashboard(); }
@@ -262,6 +268,16 @@
             const ds = document.getElementById('adminDashboard'); if (ds) ds.style.display = 'block';
             try { initAdminUI(); renderAdminProjects(); renderServicesAdmin(); renderContentManager(); renderBrochuresAdmin(); updateDashboardCounts(); } catch(e) { /* ignore */ }
           }
+
+          // Try pinging the server to update the status indicator (non-blocking)
+          try {
+            fetch('/api/ping', { headers: { 'X-Admin-Pass': pass } }).then(r => {
+              const statusEl = document.getElementById('serverSaveStatus');
+              if (r && r.ok) { if (statusEl) statusEl.innerHTML = 'Server: <strong>OK</strong>'; }
+              else { if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No auth</strong>'; }
+            }).catch(()=>{});
+          } catch(e){}
+
           error.style.display = 'none';
         } else {
           error.style.display = 'block';

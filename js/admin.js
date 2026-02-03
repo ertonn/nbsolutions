@@ -1,5 +1,5 @@
 // Supabase client (initialized at DOMContentLoaded)
-let supabase = null;
+let supabaseClient = null;
 let ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin'; // kept for fallback
 const STORAGE_KEY = "nb_projects_data";
 
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     syncWithJSON(); // Ensure local storage has initial data
     // if supabase is configured, check auth and sync
-    if (supabase) checkAuthState();
+    if (supabaseClient) checkAuthState();
 });
 
 function checkPassword() {
@@ -131,10 +131,10 @@ function initSupabase() {
         const url = window.NEXT_PUBLIC_SUPABASE_URL || document.querySelector('meta[name="supabase-url"]').content || '';
         const key = window.NEXT_PUBLIC_SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-anon-key"]').content || '';
         if (!url || !key) { console.warn('Supabase keys not found'); return; }
-        supabase = supabaseJs.createClient(url, key);
+        supabaseClient = supabaseJs.createClient(url, key);
 
         // listen to auth changes
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session && session.user) onSignedIn(session.user);
             else { document.getElementById('signedInAs').textContent = ''; document.getElementById('supabaseSignOutBtn').style.display = 'none'; }
         });
@@ -142,9 +142,9 @@ function initSupabase() {
 }
 
 async function checkAuthState() {
-    if (!supabase) return;
+    if (!supabaseClient) return;
     try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await supabaseClient.auth.getSession();
         if (data && data.session && data.session.user) {
             onSignedIn(data.session.user);
         }
@@ -152,11 +152,11 @@ async function checkAuthState() {
 }
 
 async function supabaseSignIn() {
-    if (!supabase) { document.getElementById('loginError').textContent = 'Supabase not configured'; document.getElementById('loginError').style.display = 'block'; return; }
+    if (!supabaseClient) { document.getElementById('loginError').textContent = 'Supabase not configured'; document.getElementById('loginError').style.display = 'block'; return; }
     const email = document.getElementById('adminEmail').value.trim();
     const pass = document.getElementById('adminPassword').value;
     try {
-        const res = await supabase.auth.signInWithPassword({ email, password: pass });
+        const res = await supabaseClient.auth.signInWithPassword({ email, password: pass });
         if (res.error) throw res.error;
         if (res.data && res.data.user) {
             localStorage.setItem('admin_logged_in', 'true');
@@ -171,8 +171,8 @@ async function supabaseSignIn() {
 }
 
 async function supabaseSignOut() {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    if (!supabaseClient) return;
+    await supabaseClient.auth.signOut();
     localStorage.removeItem('admin_logged_in');
     document.getElementById('signedInAs').textContent = '';
     document.getElementById('supabaseSignOutBtn').style.display = 'none';
@@ -264,11 +264,11 @@ function toggleProjectForm(isEdit = false) {
 } 
 
 async function renderAdminProjects() {
-    // prefer remote projects when available
+    // prefer remote projects when available, but keep local sample data if remote is empty
     let projects = getProjects();
-    if (supabase) {
+    if (supabaseClient) {
         const remote = await fetchProjectsRemote();
-        if (remote && Array.isArray(remote)) projects = remote.map(p => ({
+        if (remote && Array.isArray(remote) && remote.length > 0) projects = remote.map(p => ({
             id: p.id,
             title: p.title,
             category: p.category,
@@ -495,7 +495,7 @@ async function editProject(id) {
     let project = null;
     if (supabase) {
         try {
-            const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+            const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
             if (!error) project = data;
         } catch (e) { console.error('fetch project', e); }
     }
@@ -570,6 +570,13 @@ async function loadContentData() {
 }
 
 async function renderContentManager() {
+    // ensure admin content is populated from local JSON when not present remotely
+    if (!window.__adminContent || Object.keys(window.__adminContent).length === 0) {
+        try {
+            const res = await fetch('/assets/misc/content.json', {cache: 'no-store'});
+            if (res.ok) window.__adminContent = await res.json();
+        } catch(e) { /* ignore */ }
+    }
     const d = window.__adminContent || {};
     document.getElementById('content_projects_section_title').value = d['projects.section.title'] || '';
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
@@ -701,7 +708,7 @@ async function saveContent() {
         if (supabase) {
             // save into site_content table under key 'site_content'
             const payload = { key: 'site_content', value: d, updated_at: new Date() };
-            const { data, error } = await supabase.from('site_content').upsert(payload, { onConflict: 'key' });
+            const { data, error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key' });
             if (error) throw error;
             alert('Content saved to Supabase.');
         } else {
@@ -740,7 +747,7 @@ function exportContent() {
 async function fetchContentRemote() {
     if (!supabase) return null;
     try {
-        const { data, error } = await supabase.from('site_content').select('value').eq('key','site_content').single();
+        const { data, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
         if (error) throw error;
         return data ? data.value : null;
     } catch(e){ console.error('fetchContentRemote error', e); return null; }

@@ -246,6 +246,30 @@
         </div>
     </div>
 
+    <script>
+    // Fallback checkPassword to handle cases where admin.js did not load
+    if (typeof checkPassword === 'undefined') {
+      function checkPassword() {
+        const pass = document.getElementById('adminPassword').value;
+        const error = document.getElementById('loginError');
+        const ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin';
+        if (pass === ADMIN_PASSWORD) {
+          localStorage.setItem('admin_logged_in', 'true');
+          // show dashboard if available
+          if (typeof showDashboard === 'function') { showDashboard(); }
+          else {
+            const ls = document.getElementById('loginScreen'); if (ls) ls.style.display = 'none';
+            const ds = document.getElementById('adminDashboard'); if (ds) ds.style.display = 'block';
+            try { initAdminUI(); renderAdminProjects(); renderServicesAdmin(); renderContentManager(); updateDashboardCounts(); } catch(e) { /* ignore */ }
+          }
+          error.style.display = 'none';
+        } else {
+          error.style.display = 'block';
+        }
+      }
+    }
+    </script>
+
     <!-- Dashboard -->
     <div id="adminDashboard" class="admin-dashboard">
         <!-- Project Management moved below Content Management -->

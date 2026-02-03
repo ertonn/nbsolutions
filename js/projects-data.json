@@ -4,8 +4,6 @@
         "title": "Rrogozhinë - Fier - Vlorë Railway Rehabilitation and Upgrade (ONGOING)",
         "category": "Railway Projects",
         "description": "<p><strong>Corridor review and engineering support for the rehabilitation and upgrade of the Rrogozhinë – Fier – Vlorë railway line.</strong></p><p>Including:</p><ul><li>Review of the existing railway corridor and infrastructure</li><li>Development and refinement of the <strong>Digital Terrain Model (DTM)</strong> based on survey data, ASIG datasets, and orthophotos</li><li>Retracing, adjustment, and optimization of the existing horizontal and vertical alignment, including alignment improvement options</li><li>Development of <strong>railway alignment options</strong>, including connection options to <strong>Vlora Airport</strong>, and contribution to multi-criteria alignment selection</li><li>Preparation of <strong>horizontal and vertical alignment drawings</strong>, overview layouts, and typical cross-sections</li><li>Assistance in the assessment and design development of <strong>major and minor structures</strong>, including bridges, culverts, stations, and level crossings</li><li><strong>Hydraulic and drainage considerations</strong> integrated within the corridor and alignment design</li><li>Preparation of <strong>preliminary and final idea design documentation</strong>, drawings, and reports</li><li>Preparation of <strong>Bills of Quantities and cost estimates</strong> for railway-related disciplines</li><li>Ensuring compliance with <strong>TSI requirements</strong>, Albanian railway standards, and applicable technical regulations</li></ul>",
-        "client": "General Directorate of Railways",
-        "year": "Ongoing",
         "image": "assets/images/different categories/projects/rrogozhinefiervlore.png"
     },
     {
@@ -13,8 +11,6 @@
         "title": "Feasibility study and Preliminary Design of Durres – Prishtine Railway",
         "category": "Railway Projects",
         "description": "<p><strong>Strategic corridor analysis and preliminary engineering design for a new railway link between Durres (Albania) and Prishtina (Kosovo).</strong></p><p>Including:</p><ul><li>Feasibility study and concept design for the railway connection</li><li>Alignment studies and cross-border connectivity analysis</li><li>Economic and social impact assessment</li><li>Preliminary technical documentation for regional integration</li></ul>",
-        "client": "Ministry of Infrastructure",
-        "year": "2024",
         "image": "assets/images/different categories/projects/durresprishtina.png"
     },
     {
@@ -22,8 +18,6 @@
         "title": "Tirana – Durrës Railway and Airport Connection",
         "category": "Railway Projects",
         "description": "<p><strong>Detailed engineering consulting for the Tirana – Durrës line and new Rinas Airport connection.</strong></p><p>Including:</p><ul><li>Preliminary and detailed design of the <strong>railway connection to Tirana International Airport</strong></li><li>Development of horizontal and vertical railway alignment, including studies, longitudinal and transversal profiles</li><li>Drainage and hydraulic design, including surface water management, culverts, and drainage channels</li><li>Coordination with existing railway infrastructure, road crossings, utilities, and airport-related constraints</li><li>Preparation of preliminary design documentation and detailed design for execution</li><li>Contribution to tender documentation, including technical specifications and quantities</li></ul>",
-        "client": "Albanian Railways",
-        "year": "2022",
         "image": "assets/images/different categories/projects/tiranadurresairportconnection.png"
     },
     {
@@ -31,8 +25,6 @@
         "title": "Tirana Urban Railway Section (Terminal – City Station)",
         "category": "Railway Projects",
         "description": "<p><strong>Design of the urban railway section between Tirana Terminal Station and Tirana City Station (approximately 5 km).</strong></p><p>Including:</p><ul><li>Review and optimization of the existing <strong>urban railway corridor</strong> under dense city constraints</li><li>Development of horizontal and vertical railway alignment, compliant with operational and safety requirements</li><li>Design of <strong>station areas</strong>, including track layout, platforms, and integration with the surrounding urban fabric</li><li>Hydraulic and drainage design, including surface water management and urban drainage connections</li><li>Coordination with existing roads, utilities, structures, and buildings along the corridor</li><li>Preparation of technical specifications, bills of quantities, and the full tender documentation package</li></ul>",
-        "client": "Municipality of Tirana",
-        "year": "2025",
         "image": "assets/images/different categories/projects/tiranaterminalstation.png"
     },
     {
@@ -40,71 +32,6 @@
         "title": "Durres Water Supply Network Optimization",
         "category": "Water Supply & Hydraulics",
         "description": "<p><strong>Consulting services for the optimized action plan and detailed design of the Durres water network.</strong></p><p>Including:</p><ul><li>Preparation of project deliverables: <strong>D-7 Optimized Action Plan Report</strong> and <strong>D-8 Detailed Design of Action Plan Interventions</strong></li><li>Detailed design of priority investment measures, including <strong>pressure reducing valves, pumping facilities, and reservoirs</strong></li><li>Network rehabilitation works and hydraulic modeling optimization</li><li>Preparation of Bills of Quantities, cost estimates, and technical specifications</li><li>Preparation of tender and bid packages for implementation interventions</li></ul>",
-        "client": "World Bank / AKUM",
-        "year": "2023",
         "image": "assets/images/different categories/projects/durres pipeline2.png"
-    },
-    {
-        "id": 6,
-        "title": "Hydraulic Verification of Main Pipelines – Durres",
-        "category": "Water Supply & Hydraulics",
-        "description": "<p><strong>Technical verification and hydraulic analysis of the main transmission pipelines supplying Durres.</strong></p><p>Including:</p><ul><li>Preparation of <strong>geotechnical and structural calculations</strong> for engineering measures along critical pipeline segments</li><li>Identification of bottlenecks and proposals for capacity upgrades</li><li>Preparation of technical specifications and supporting documentation for construction</li><li>Coordination with the Contractor during design review stages</li></ul>",
-        "client": "Durres Water Utility",
-        "year": "2024",
-        "image": "assets/images/different categories/projects/durrespipeline.png"
-    },
-    {
-        "id": 7,
-        "title": "Short-term Technical Support/Design Review (Infrastructure)",
-        "category": "Water Supply & Hydraulics",
-        "description": "<p><strong>Provision of hydraulic modelling and water supply design services for the Durrës Water Supply and Sanitation Improvement Project.</strong></p><p>Including:</p><ul><li>Provision and use of all available data from previous water network modelling and zoning studies (LOTTI, 2018 - World Bank financed)</li><li>Hydraulic modelling of <strong>bulk water supply systems</strong>, including Fushë Kuqe, Fushë Milot, and Fushë Kruja transmission systems</li><li>Use of <strong>WaterGEMS software</strong> for hydraulic modelling, analysis, and scenario development</li><li>Technical support to the Project Manager during model development and validation</li></ul>",
-        "client": "SETEC Engineering",
-        "year": "2023",
-        "image": "assets/images/different categories/projects/technical.png"
-    },
-    {
-        "id": 8,
-        "title": "Qukës – Qafë Pllocë Road Corridor",
-        "category": "Roads & Civil Infrastructure",
-        "description": "<p><strong>Design of an approximately 10 km road section along the Tirana-Korça Road Corridor.</strong></p><p>Including:</p><ul><li>Geometric and structural design for the challenging mountainous road corridor</li><li>Design of viaducts, tunnels, and extensive slope protection measures</li><li>Preparation of technical specifications, quantities, and supporting design documentation</li></ul>",
-        "client": "Albanian Road Authority",
-        "year": "2022",
-        "image": "assets/images/different categories/projects/qukesqafeplloce.png"
-    },
-    {
-        "id": 9,
-        "title": "Muzak Topia Road – Berat",
-        "category": "Roads & Civil Infrastructure",
-        "description": "<p><strong>Road reconstruction design for \"Muzak Topia\" Road in the UNESCO heritage city of Berat.</strong></p><p>Including:</p><ul><li>Review of the existing road corridor and assessment of geometric and structural deficiencies</li><li>Optimization of horizontal and vertical alignment for safety and compliance</li><li>Detailed design of pavement, drainage, and urban integration</li></ul>",
-        "client": "Municipality of Berat",
-        "year": "2023",
-        "image": "assets/images/different categories/projects/muzaktopia.png"
-    },
-    {
-        "id": 10,
-        "title": "Shna Ndou Church (Kisha e Laçit)",
-        "category": "Buildings & Special Projects",
-        "description": "<p><strong>Structural assessment and rehabilitation design for the pilgrimage site of Shna Ndou Church.</strong></p><p>Including:</p><ul><li>Structural design of the <strong>church complex, including the main building and associated ancillary structures</strong></li><li>Ensuring compliance with applicable structural codes and design standards</li><li>Structural safety assessment for high visitor loads</li></ul>",
-        "client": "Franciscan Order",
-        "year": "2021",
-        "image": "assets/images/different categories/projects/kishaelacit.png"
-    },
-    {
-        "id": 11,
-        "title": "Shell Albania – Drilling Sites Infrastructure",
-        "category": "Buildings & Special Projects",
-        "description": "<p><strong>Civil engineering design for drilling site infrastructure and raw water supply systems.</strong></p><p>Including:</p><ul><li>Hydraulic design of <strong>raw water supply systems</strong>, including abstraction works and transmission mains</li><li>Estimation of water demand for drilling operations, domestic use, and fire protection</li><li>Design of transmission pipelines, including hydraulic calculations, sizing, and profiling</li><li>Stormwater drainage design and erosion control</li><li>Environmental impact considerations related to water abstraction</li></ul>",
-        "client": "Shell Albania",
-        "year": "2024",
-        "image": "assets/images/different categories/projects/shellalbania.png"
-    },
-    {
-        "id": 12,
-        "title": "Jale Tourist & Residential Complex",
-        "category": "Buildings & Special Projects",
-        "description": "<p><strong>Tourist, residential and services complex Phase l, II, III, IV with frontage in Jale, Himara Municipality.</strong></p><p>Including:</p><ul><li>Technical responsibility and coordination for infrastructure works across <strong>Nucleus 1, Nucleus 2, Nucleus 3, and Nucleus 4</strong></li><li>Preparation and management of the <strong>Digital Terrain Model (DTM)</strong> and georeferencing</li><li>Design of internal roads, parking areas, and site grading (geomteric layout, pavement, earthworks)</li><li>Design of water supply, stormwater drainage, and sewerage networks for all nuclei</li><li>Preparation of excavation and earthworks plans for buildings</li><li>Technical coordination and guidance of the construction team</li></ul>",
-        "client": "Private Investor",
-        "year": "Ongoing",
-        "image": "assets/images/different categories/projects/kompleksjale.png"
     }
 ]

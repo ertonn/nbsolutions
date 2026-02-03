@@ -38,16 +38,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="project-content">
                     <h3 class="project-title">${project.title}</h3>
                     <p class="project-description">${truncatedDescription}</p>
-                    <div class="project-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Client</span>
-                            <span class="detail-value">${project.client}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Date</span>
-                            <span class="detail-value">${project.year}</span>
-                        </div>
-                    </div>
                     <a href="projects.html#project-${project.id}" class="project-link">View Details</a>
                 </div>
             `;

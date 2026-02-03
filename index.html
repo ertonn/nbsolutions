@@ -52,13 +52,6 @@
                         residential, commercial, and industrial projects.</p>
                     <a href="#slogan" class="hero-button">Get Started</a>
                 </div>
-                <div class="hero-video">
-                    <iframe
-                        src="https://www.youtube.com/embed/ajuMoYvkBoI?mute=1&loop=1&playlist=ajuMoYvkBoI&controls=0&modestbranding=1&showinfo=0"
-                        title="NB Construction Hero Video" frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen></iframe>
-                </div>
             </div>
         </section>
 
@@ -151,10 +144,10 @@
                     <div class="about-text-content">
                         <div class="about-header">
                             <span class="section-subtitle">[Who We Are]</span>
-                            <h2 class="section-title">Your Trusted Partner in Infrastructure & Engineering Excellence
+                            <h2 class="section-title" data-content-key="homepage.about.title">Your Trusted Partner in Infrastructure & Engineering Excellence
                             </h2>
                         </div>
-                        <p class="about-description">
+                        <p class="about-description" data-content-key="homepage.about.desc" data-content-type="html">
                             NB Engineering Consulting specializes in transport, railway, and water infrastructure.
                             <span class="hide-mobile">The company supports international and local clients through all
                                 project stages, from feasibility and hydraulic modeling to detailed design, tender
@@ -188,7 +181,7 @@
                 <div class="projects-header">
                     <div class="projects-header-left">
                         <span class="section-subtitle">[Recent Works]</span>
-                        <h2 class="section-title">Explore Our Construction Excellence Projects</h2>
+                        <h2 class="section-title" data-content-key="projects.section.title">Explore Our Construction Excellence Projects</h2>
                     </div>
                     <div class="projects-header-right">
                         <a href="projects.html" class="cta-button">View All Projects</a>
@@ -218,8 +211,31 @@
                 </div>
                 <div class="brochure-image-wrapper">
                     <div class="illustration-placeholder">
-                        <img src="assets/images/different categories/sitting.png" alt="Brochure Illustration">
+                        <img src="assets/misc/brochure.jpeg" alt="Brochure Illustration">
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personal Profile Section -->
+        <section class="brochure-section duplicate">
+            <div class="brochure-container">
+                <div class="brochure-image-wrapper">
+                    <div class="illustration-placeholder">
+                        <img src="assets/images/different categories/sitting.png" alt="Personal Profile Illustration">
+                    </div>
+                </div>
+                <div class="brochure-content">
+                    <h2 class="brochure-title">Personal Profile</h2>
+                    <p class="brochure-description">
+                        Learn more about the founder's background, expertise, and professional credentials.
+                        Download the personal profile to see detailed experience and references.
+                    </p>
+
+                    <p class="brochure-cta-label">Download now...</p>
+                    <a href="assets/fletepalosja nbraho.pdf" target="_blank" class="cta-button brochure-btn">
+                        <span class="icon">📄</span> Get Our Brochure
+                    </a>
                 </div>
             </div>
         </section>
@@ -229,12 +245,12 @@
                 <div class="contact-wrapper">
                     <div class="contact-info">
                         <span class="section-subtitle">[Get Involved]</span>
-                        <h2 class="section-title">Let’s Build Something Great Together Today</h2>
+                        <h2 class="section-title" data-content-key="contact.section.title">Lets Build Something Great Together Today</h2>
 
-                        <ul class="contact-features">
-                            <li>24/7 Support</li>
-                            <li>Free Consultation</li>
-                            <li>Certified Experts</li>
+                        <ul class="contact-features" data-content-list="contact.features">
+                            <template>
+                                <li class="contact-feature-item"></li>
+                            </template>
                         </ul>
 
                         <div class="contact-images">
@@ -345,6 +361,7 @@
     <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
     <script src="js/index-projects.js"></script>
     <script src="js/mobile-menu.js"></script>
+    <script src="js/content-loader.js"></script>
 </body>
 
 </html>

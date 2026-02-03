@@ -43,10 +43,6 @@
         align-self: center;
     }
 
-    .hero-video {
-        display: none;
-    }
-
     .about-content-wrapper {
         flex-direction: column;
         gap: 0;

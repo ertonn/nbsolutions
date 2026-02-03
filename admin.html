@@ -37,9 +37,10 @@
 
         .admin-dashboard {
             display: none;
-            padding: 80px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+            /* reduced top padding and modest side gap to avoid strong centering */
+            padding: 40px 18px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .dashboard-header {
@@ -135,6 +136,87 @@
             cursor: pointer;
             font-weight: 700;
         }
+
+        /* Content manager styles */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 40px; /* increased gap for more breathing room */
+            margin-top: 30px;
+        }
+        .content-card {
+            background: var(--white-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            margin-bottom: 20px; /* add vertical separation when stacked */
+        }
+        .content-card h3 { margin-top: 0; }        /* Add consistent spacing between inner sections */
+        .content-card .form-group { margin-bottom: 18px; }
+        .content-card .section-block { margin-top: 22px; }        .wysiwyg-toolbar { display:flex; gap:6px; margin-bottom:8px; }
+        .wysiwyg-toolbar button { padding:6px 8px; }
+        .wysiwyg-editor { min-height:120px; border:1px solid #ddd; padding:10px; border-radius:6px; }
+
+        /* Large inputs for prominent titles/descriptions */
+        .large-input { padding:14px; font-size:16px; border-radius:8px; border:1px solid #d7dbe0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .large-input::placeholder { color: #9aa3ad; }
+        .large-textarea { min-height:120px; padding:12px; border-radius:8px; border:1px solid #d7dbe0; }
+
+        .service-item { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:8px 6px; border-bottom:1px solid #f3f3f3; }
+        .service-item img { height:36px; width:36px; object-fit:contain; }
+        .service-actions button { margin-left:6px; }
+        .small-muted { font-size:12px; color:var(--text-color); opacity:0.7; margin-top:6px; }
+
+        /* WYSIWYG placeholder helper */
+        .wysiwyg-editor[data-placeholder]:empty:before {
+            content: attr(data-placeholder);
+            color: #9aa3ad;
+            pointer-events: none;
+            display: block;
+            white-space: pre-wrap;
+        }
+
+        /* Layout helpers */
+        .admin-container { display:flex; gap:24px; align-items:flex-start; width:100%; padding:0 18px; margin:0; box-sizing:border-box; }
+        .sidebar { width:220px; background:#f8fbff; border-radius:12px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.04); position:sticky; top:20px; height:fit-content; }
+        .sidebar .brand { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .sidebar .brand img { height:36px; }
+        .sidebar nav { display:flex; flex-direction:column; gap:8px; }
+        .sidebar .nav-link { padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--black-color); display:block; font-weight:700; }
+        .sidebar .nav-link.active { background: #eaf6ff; color:#0b63b1; }
+        .main-content { flex:1; min-width:0; }
+        .admin-section { display:none; background: #fff; border-radius:12px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.04); margin-top:0; margin-bottom:36px; }
+        .admin-section.active { display:block; }
+        .admin-section h2 { margin:0 0 12px 0; display:flex; align-items:center; gap:12px; }
+        .section-badge { display:inline-block; padding:4px 8px; background:#eef6ff; color:#0b63b1; border-radius:8px; font-weight:700; font-size:13px; }
+        html { scroll-behavior: smooth; }
+
+        /* Modal / Card dialog */
+        .modal-backdrop { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1000; padding:18px; box-sizing:border-box; }
+        .modal-backdrop.active { display:flex; }
+        .modal-card { background:var(--white-color); border-radius:12px; padding:20px; max-width:900px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.25); max-height:calc(100vh - 80px); overflow:auto; }
+        .modal-close { background:transparent; border:none; font-size:18px; cursor:pointer; padding:6px; }
+        .modal-card .form-grid { grid-template-columns:1fr 1fr; gap:16px; }
+        .modal-card .form-group input, .modal-card .form-group textarea, .modal-card .form-group select { padding:12px; }
+        .modal-card .large-input { padding:12px; }
+
+        /* Project preview card inside modal */
+        .project-preview-card { background: #f8fbff; border-radius:10px; padding:16px; max-width:320px; }
+        .project-preview-card img { width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:10px; }
+        .project-preview-card h3 { margin:0 0 6px 0; font-size:18px; }
+        .project-preview-card .muted { color:var(--text-color); opacity:0.8; font-size:13px; }
+        .project-preview-card ul { list-style: disc; padding-left:18px; margin:6px 0; }
+
+        @media (max-width: 900px) {
+            .admin-container { flex-direction:column; padding:12px; }
+            .sidebar { width:100%; position:relative; display:flex; overflow:auto; }
+            .sidebar nav { flex-direction:row; gap:6px; }
+            .sidebar .nav-link { white-space:nowrap; }
+            .modal-card { max-width:100%; height:auto; }
+            .modal-card .form-grid { grid-template-columns: 1fr; }
+            .project-preview-card { max-width:100%; }
+        }
+
     </style>
 </head>
 
@@ -160,84 +242,270 @@
 
     <!-- Dashboard -->
     <div id="adminDashboard" class="admin-dashboard">
-        <div class="dashboard-header">
-            <div>
-                <h1>Project Management</h1>
-                <p>Welcome back, Administrator</p>
+        <!-- Project Management moved below Content Management -->
+
+        <div class="admin-container">
+            <aside class="sidebar">
+                <div class="brand"><img src="assets/images/Logo NB.png" alt="NB"><strong>Admin</strong></div>
+                <nav>
+                    <a href="#" data-section="dashboard-section" class="nav-link active">Overview</a>
+                    <a href="#" data-section="projects-section" class="nav-link">Projects</a>
+                    <a href="#" data-section="content-section" class="nav-link">Content</a>
+                    <a href="#" data-section="services-section" class="nav-link">Services</a>
+                    <a href="#" data-section="settings-section" class="nav-link">Settings</a>
+                    <a href="index.html" target="_blank" class="nav-link" style="background:#e9eef5;color:#1b6fb3;">Preview Site</a>
+                    <a href="#" id="sidebarLogout" class="nav-link logout-link" style="color:#ff4d4d;">Logout</a>
+                </nav>
+            </aside>
+            <main class="main-content">
+                <div id="dashboard-section" class="admin-section active">
+                    <h2>Overview <span class="section-badge">Summary</span></h2>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+                        <div class="content-card" style="flex:1; min-width:200px;">
+                            <h4>Projects</h4>
+                            <div id="dashboardProjectsCount" style="font-size:22px; font-weight:700;">0</div>
+                        </div>
+                        <div class="content-card" style="flex:1; min-width:200px;">
+                            <h4>Services</h4>
+                            <div id="dashboardServicesCount" style="font-size:22px; font-weight:700;">0</div>
+                        </div>
+                    </div>
+                </div> 
+        <section id="content-section" class="admin-section">
+            <h2 style="margin-top:0;">Content Management <span class="section-badge">Editable</span></h2>
+            <div id="contentManager" class="content-grid">
+            <div class="content-card">
+                <h3>Homepage</h3>
+                <div class="form-group">
+                    <label>Homepage Hero Title</label>
+                    <input type="text" id="content_homepage_hero_title">
+                </div>
+                <div class="form-group">
+                    <label>Homepage Hero Description</label>
+                    <input type="text" id="content_homepage_hero_desc">
+                </div>
+
+                <div class="form-group section-block">
+                    <label>About Section Title (Homepage)</label>
+                    <input type="text" id="content_homepage_about_title" class="large-input" placeholder="Your Trusted Partner in Infrastructure & Engineering Excellence">
+                    <div class="small-muted">Short headline shown above the homepage About description. Keep it concise.</div>
+                </div>
+
+                <div style="margin-top:12px;">
+                    <label>About Section Description (Homepage) (WYSIWYG)</label>
+                    <div class="wysiwyg-toolbar">
+                        <button type="button" onclick="execWysiwyg('bold')"><b>B</b></button>
+                        <button type="button" onclick="execWysiwyg('italic')"><i>I</i></button>
+                        <button type="button" onclick="execWysiwyg('insertUnorderedList')">• List</button>
+                        <button type="button" onclick="execWysiwyg('insertOrderedList')">1. List</button>
+                        <button type="button" onclick="createLinkPrompt()">Link</button>
+                    </div>
+                    <div id="content_homepage_about_desc" class="wysiwyg-editor" contenteditable="true" data-placeholder="Write the short 'Who We Are' text for the homepage. Use the toolbar for basic formatting."></div>
+                    <div class="small-muted">This short description will appear on the homepage About section.</div>
+                </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 30px;">
-                <button onclick="toggleProjectForm()" class="cta-button">+ ADD NEW PROJECT</button>
-                <span class="admin-logout" onclick="logout()">Logout</span>
+
+            <div class="content-card">
+                <h3>Site Text</h3>
+                <div class="form-group">
+                    <label>Projects Section Title</label>
+                    <input type="text" id="content_projects_section_title">
+                </div>
+
+                <div class="form-group">
+                    <label>Contact CTA Title</label>
+                    <input type="text" id="content_contact_section_title" class="large-input" placeholder="Let's Build Something Great Together Today">
+                    <div class="small-muted">Main title for the Contact section on the homepage.</div>
+                </div>
+                <div class="form-group">
+                    <label>Contact CTA Bullets (one per line)</label>
+                    <textarea id="content_contact_features" class="large-textarea" rows="5" placeholder="24/7 Support\nFree Consultation\nCertified Experts"></textarea>
+                    <div class="small-muted">Enter one bullet per line; these appear under the Contact CTA title on the homepage.</div>
+                </div>
+
+                <div style="margin-top:18px; display:flex; gap:10px;">
+                    <button class="cta-button" onclick="saveContent()">Save Content</button>
+                    <button class="cta-button" style="background:var(--light-gray); color:var(--black-color);" onclick="discardContentEdits()">Discard</button>
+                    <button class="cta-button" style="background:#f7f7f7; color:var(--black-color);" onclick="exportContent()">Export JSON</button>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Services</h3>
+                <div class="small-muted">Services management moved to the dedicated Services section.</div>
+            </div>
+
+
+    </section>
+
+    <section id="services-section" class="admin-section">
+        <h2>Services <span class="section-badge">Manage</span></h2>
+        <div class="content-card">
+            <div class="content-grid">
+                <div>
+                    <h3>Services</h3>
+                    <div class="form-group">
+                        <label>Services Hero Title</label>
+                        <input type="text" id="content_services_hero_title" class="large-input" placeholder="What We Do">
+                    </div>
+                    <div class="form-group">
+                        <label>Services Hero Description</label>
+                        <input type="text" id="content_services_hero_desc" placeholder="Short description shown under the Services hero">
+                    </div>
+
+                    <div style="margin-top:12px;">
+                        <h4 style="margin:0 0 8px 0;">Manage Service Cards</h4>
+                        <div id="servicesAdminList"></div>
+                        <div style="margin-top:12px;">
+                            <button class="cta-button" onclick="showServiceForm()">+ Add New Service</button>
+                        </div>
+
+                        <!-- Service edit moved to modal dialog (see bottom of page) -->
+                    </div>
+                </div>
+
+
             </div>
         </div>
+    </section>
 
-        <!-- Add/Edit Form -->
-        <div id="projectForm" class="project-form">
-            <h2 id="formTitle" style="margin-bottom: 30px;">Add New Project</h2>
-            <form id="actualForm" onsubmit="saveProject(event)">
-                <input type="hidden" id="editId">
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label>Project Title</label>
-                        <input type="text" id="projectTitle" required>
+    <section id="settings-section" class="admin-section">
+        <h2>Settings <span class="section-badge">Admin</span></h2>
+        <div class="content-card">
+            <h3>Administrator Settings</h3>
+            <div class="form-group">
+                <label>Change Admin Password</label>
+                <input type="password" id="settings_admin_password" placeholder="New password" style="width:100%;">
+            </div>
+            <div style="margin-top:12px;">
+                <button class="cta-button" onclick="changePassword()">Save Password</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects-section" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
+                <div>
+                    <h1>Project Management</h1>
+                    <p>Welcome back, Administrator</p>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input type="text" id="projectSearch" placeholder="Search projects..." style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                    <select id="projectFilterCategory" style="padding:8px; border-radius:6px; border:1px solid #ddd;"><option value="">All Categories</option></select>
+
+                    <button onclick="toggleProjectForm()" class="cta-button">+ ADD NEW PROJECT</button>
+                </div>
+            </div>
+        <!-- Project edit form moved to modal (see bottom of page) -->
+
+        <div id="projectsArea" class="projects-area" style="display:none; margin-top:18px;">
+            <h2>Current Projects</h2>
+            <div id="adminProjectList" class="admin-project-list">
+                <!-- Projects will appear here -->
+            </div>
+        </div>
+    </section>
+
+    </main>
+    </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <h2 id="formTitle" style="margin:0;">Add New Project</h2>
+                <button class="modal-close" onclick="toggleProjectForm()" aria-label="Close">✕</button>
+            </div>
+            <form id="actualForm" onsubmit="saveProject(event)" style="margin-top:12px; display:grid; grid-template-columns: 1fr 340px; gap:18px; align-items:start;">
+                <div>
+                    <input type="hidden" id="editId">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Project Title</label>
+                            <input type="text" id="projectTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="projectCategory" required>
+                                <option value="Railway Projects">Railway Projects</option>
+                                <option value="Water Supply & Hydraulics">Water Supply & Hydraulics</option>
+                                <option value="Roads & Civil Infrastructure">Roads & Civil Infrastructure</option>
+                                <option value="Buildings & Special Projects">Buildings & Special Projects</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Project Image</label>
+                            <input type="file" id="projectImage" accept="image/*" >
+                            <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">Image will be saved to: assets/images/different categories/projects/</small>
+                            <input type="hidden" id="projectImagePath">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Description</label>
+                            <textarea id="projectDescription" rows="8" required placeholder="Enter project description. Use '- ' for bullets or '1. ' for numbered lists."></textarea>
+                            <small class="small-muted">Formatting tips: Use '- ' for bullets, '1. ' for numbers; line breaks are preserved. This field converts plain text into HTML lists for the public project page.</small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select id="projectCategory" required>
-                            <option value="Railway Projects">Railway Projects</option>
-                            <option value="Water Supply & Hydraulics">Water Supply & Hydraulics</option>
-                            <option value="Roads & Civil Infrastructure">Roads & Civil Infrastructure</option>
-                            <option value="Buildings & Special Projects">Buildings & Special Projects</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Project Image</label>
-                        <input type="file" id="projectImage" accept="image/*" required>
-                        <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">Image
-                            will be saved to: assets/images/different categories/projects/</small>
-                        <input type="hidden" id="projectImagePath">
-                    </div>
-                    <div class="form-group">
-                        <label>Client</label>
-                        <input type="text" id="projectClient" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Year</label>
-                        <input type="text" id="projectYear" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Location</label>
-                        <input type="text" id="projectLocation">
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="projectStatus">
-                            <option value="Completed">Completed</option>
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Planned">Planned</option>
-                        </select>
-                    </div>
-                    <div class="form-group full-width">
-                        <label>Description</label>
-                        <textarea id="projectDescription" rows="8" required
-                            placeholder="Enter project description. Use bullet points by starting lines with '- ' or create numbered lists with '1. ', '2. ', etc."></textarea>
-                        <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">
-                            Formatting tips: Start lines with "- " for bullets, or "1. " for numbered lists. Line breaks
-                            will be preserved.
-                        </small>
+                    <div style="margin-top: 20px; display: flex; gap: 12px;">
+                        <button type="submit" class="cta-button">SAVE PROJECT</button>
+                        <button type="button" onclick="toggleProjectForm()" class="cta-button" style="background: var(--light-gray); color: var(--black-color);">CANCEL</button>
                     </div>
                 </div>
-                <div style="margin-top: 30px; display: flex; gap: 15px;">
-                    <button type="submit" class="cta-button">SAVE PROJECT</button>
-                    <button type="button" onclick="toggleProjectForm()" class="cta-button"
-                        style="background: var(--light-gray); color: var(--black-color);">CANCEL</button>
-                </div>
+
+                <aside class="project-preview-card" aria-hidden="true">
+                    <img id="projectImagePreview" src="assets/images/icons/placeholder.png" alt="Project preview">
+                    <h3 id="projPreviewTitle">Project Title</h3>
+                    <div class="muted" id="projPreviewCategory">Category</div>
+                    <div style="margin-top:10px;" id="projPreviewDescription">Short description preview will appear here.</div>
+                </aside>
             </form>
         </div>
+    </div>
 
-        <h2>Current Projects</h2>
-        <div id="adminProjectList" class="admin-project-list">
-            <!-- Projects will appear here -->
+    <!-- Service Modal -->
+    <div id="serviceModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <h2 style="margin:0;">Service</h2>
+                <button class="modal-close" onclick="hideServiceForm()" aria-label="Close">✕</button>
+            </div>
+            <div style="margin-top:12px; display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start;">
+                <div>
+                    <div class="form-group">
+                        <label>Icon (image file)</label>
+                        <input type="file" id="serviceIcon" accept="image/*">
+                        <img id="serviceIconPreview" src="" alt="" style="display:none; margin-top:8px; height:40px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="serviceTitle">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Bulleted List (each line is a bullet)</label>
+                        <textarea id="serviceList" rows="6" placeholder="One bullet per line"></textarea>
+                        <div class="small-muted">Each line becomes a bullet point in the service card on the Services page.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Link (optional)</label>
+                        <input type="text" id="serviceLink" placeholder="projects.html#anchor">
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="cta-button" onclick="saveService()">Save Service</button>
+                        <button class="cta-button" style="background:var(--light-gray); color:var(--black-color);" onclick="hideServiceForm()">Cancel</button>
+                    </div>
+                </div>
+
+                <aside class="project-preview-card" aria-hidden="true">
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button class="modal-close" onclick="hideServiceForm()" aria-label="Close" style="font-size:16px;">✕</button>
+                    </div>
+                    <div style="text-align:center; margin-top:4px;">
+                        <img id="modalPreviewIcon" src="assets/images/icons/placeholder.png" alt="Service Icon" style="height:72px;width:72px;object-fit:contain;margin:0 auto;">
+                        <h3 id="modalPreviewTitle" style="margin-top:10px;">Service Title</h3>
+                        <ul id="modalPreviewList" style="text-align:left; margin-top:10px;"></ul>
+                        <div style="margin-top:10px;"><a id="modalPreviewLink" href="#">View Portfolio Projects</a></div>
+                    </aside>
+            </div>
         </div>
     </div>
 

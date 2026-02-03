@@ -86,8 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('modalTitle').textContent = project.title;
             document.getElementById('modalCategory').textContent = project.category;
             document.getElementById('modalDescription').innerHTML = project.description;
-            document.getElementById('modalClient').textContent = project.client;
-            document.getElementById('modalYear').textContent = project.year;
 
             document.getElementById('modalImage').src = getImageSrc(project.image);
 

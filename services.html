@@ -59,90 +59,20 @@
             <div class="services-container">
 
                 <div class="service-detail-section">
-                    <div class="service-detail-grid">
-
-                        <!-- Roads & Transport -->
-                        <div class="service-detail-card">
-                            <div class="card-header">
-                                <div class="service-icon"><img src="assets/images/icons/roads.png" alt="Roads"></div>
-                                <h2 class="service-card-title">Roads & Transport Infrastructure</h2>
-                            </div>
-                            <ul class="service-list">
-                                <li>Geometric design (horizontal and vertical alignment)</li>
-                                <li>Pavement design</li>
-                                <li>Drainage and cross-drainage systems</li>
-                                <li>Retaining walls and slope protection</li>
-                                <li>Tender drawings and Bills of Quantities</li>
-                            </ul>
-                            <div class="service-footer">
-                                <a href="projects.html#roads-civil-infrastructure" class="service-link">View Portfolio
-                                    Projects</a>
-                            </div>
-                        </div>
-
-                        <!-- Railway Engineering -->
-                        <div class="service-detail-card">
-                            <div class="card-header">
-                                <div class="service-icon"><img src="assets/images/icons/railway.png" alt="Railway">
+                    <div class="service-detail-grid" id="services-list" data-content-list="services.cards">
+                        <template id="service-card-template">
+                            <div class="service-detail-card">
+                                <div class="card-header">
+                                    <div class="service-icon"><img src="" alt=""></div>
+                                    <h2 class="service-card-title"></h2>
                                 </div>
-                                <h2 class="service-card-title">Railway Engineering</h2>
-                            </div>
-                            <ul class="service-list">
-                                <li>Railway alignment design and optimization</li>
-                                <li>Urban and interurban railway sections</li>
-                                <li>Stations and platform areas</li>
-                                <li>Drainage systems and culverts</li>
-                                <li>Digital Terrain Model (DTM) development</li>
-                                <li>Tender and implementation design documentation</li>
-                            </ul>
-                            <div class="service-footer">
-                                <a href="projects.html#railway-projects" class="service-link">View Portfolio
-                                    Projects</a>
-                            </div>
-                        </div>
-
-                        <!-- Water Supply -->
-                        <div class="service-detail-card">
-                            <div class="card-header">
-                                <div class="service-icon"><img src="assets/images/icons/water_supply.png" alt="Water">
+                                <ul class="service-list"></ul>
+                                <div class="service-footer">
+                                    <a href="#" class="service-link">View Portfolio Projects</a>
                                 </div>
-                                <h2 class="service-card-title">Water Supply & Hydraulic Systems</h2>
                             </div>
-                            <ul class="service-list">
-                                <li>Hydraulic modelling (WaterGEMS)</li>
-                                <li>Non-Revenue Water (NRW) analysis and strategies</li>
-                                <li>Transmission and distribution pipelines</li>
-                                <li>Pumping stations, reservoirs, break pressure tanks</li>
-                                <li>Fire protection systems</li>
-                                <li>Technical reports and tender documentation</li>
-                            </ul>
-                            <div class="service-footer">
-                                <a href="projects.html#water-supply-hydraulics" class="service-link">View Portfolio
-                                    Projects</a>
-                            </div>
-                        </div>
-
-                        <!-- Buildings & Site -->
-                        <div class="service-detail-card">
-                            <div class="card-header">
-                                <div class="service-icon"><img src="assets/images/icons/building_site.png"
-                                        alt="Buildings"></div>
-                                <h2 class="service-card-title">Buildings & Site Infrastructure</h2>
-                            </div>
-                            <ul class="service-list">
-                                <li>Structural design of buildings</li>
-                                <li>Internal roads and parking areas</li>
-                                <li>Water supply, sewerage and stormwater networks</li>
-                                <li>Integrated civil–structural coordination</li>
-                                <li>Construction drawings and technical specifications</li>
-                            </ul>
-                            <div class="service-footer">
-                                <a href="projects.html#buildings-special-projects" class="service-link">View Portfolio
-                                    Projects</a>
-                            </div>
-                        </div>
-
-                    </div>
+                        </template>
+                    </div>    
                 </div>
 
                 <div class="outputs-section">
@@ -236,6 +166,7 @@
         </div>
     </footer>
     <button id="backToTop" class="back-to-top-btn" title="Go to top">↑</button>
+    <script src="js/content-loader.js"></script>
     <script src="js/mobile-menu.js"></script>
 </body>
 

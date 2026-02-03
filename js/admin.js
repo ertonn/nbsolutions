@@ -705,7 +705,7 @@ async function saveContent() {
 
     // try to POST to API if available
     try {
-        if (supabase) {
+        if (supabaseClient) {
             // save into site_content table under key 'site_content'
             const payload = { key: 'site_content', value: d, updated_at: new Date() };
             const { data, error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key' });
@@ -720,18 +720,42 @@ async function saveContent() {
             if (res.ok) {
                 alert('Content saved to server.');
             } else {
-                throw new Error('Server responded ' + res.status);
+                let txt = '';
+                try { txt = await res.text(); } catch(e) { /* ignore */ }
+                throw new Error('Server responded ' + res.status + (txt ? ': ' + txt : ''));
             }
         }
     } catch (e) {
-        // fallback: save locally
+        // fallback: save locally, and show error detail so user can diagnose
+        console.error('saveContent error', e);
         localStorage.setItem(CONTENT_KEY, JSON.stringify(d));
-        alert('Content saved locally (no server API available).');
+        alert('Content saved locally (no server API available). Error: ' + (e.message || e));
     }
 
     window.__adminContent = d;
     if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
     updateDashboardCounts();
+}
+
+// Test server endpoint for saving content (used by Settings UI)
+async function testServerSave() {
+    try {
+        const d = window.__adminContent || {};
+        const res = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+        const text = await res.text();
+        const statusEl = document.getElementById('serverSaveStatus');
+        if (res.ok) {
+            if (statusEl) statusEl.innerHTML = 'Server: <strong>OK</strong>';
+            alert('Server save OK.');
+        } else {
+            if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">Error</strong>';
+            alert('Server save failed: ' + res.status + '\n' + text);
+        }
+    } catch (e) {
+        const statusEl = document.getElementById('serverSaveStatus');
+        if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No response</strong>';
+        alert('Server request failed: ' + (e.message || e));
+    }
 }
 
 function exportContent() {
@@ -745,13 +769,14 @@ function exportContent() {
 
 // fetch content object from Supabase site_content table
 async function fetchContentRemote() {
-    if (!supabase) return null;
+    // guard: if we don't have a configured client, just return null
+    if (!supabaseClient) return null;
     try {
         const { data, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
         if (error) throw error;
         return data ? data.value : null;
     } catch(e){ console.error('fetchContentRemote error', e); return null; }
-}
+} 
 
 
 /* Services editing */

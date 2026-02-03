@@ -407,9 +407,11 @@
                 <label>Change Admin Password</label>
                 <input type="password" id="settings_admin_password" placeholder="New password" style="width:100%;">
             </div>
-            <div style="margin-top:12px;">
+            <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
                 <button class="cta-button" onclick="changePassword()">Save Password</button>
-                <button class="cta-button" style="background:#ddd; color:#111; margin-left:8px;" onclick="migrateLocalData()">Migrate Local Data</button>
+                <button class="cta-button" style="background:#ddd; color:#111;" onclick="migrateLocalData()">Migrate Local Data</button>
+                <button class="cta-button" style="background:#e9f6ee; color:#0a6f3a;" onclick="testServerSave()">Test Server Save</button>
+                <span id="serverSaveStatus" style="margin-left:8px;color:#666;">Server: <em>unknown</em></span>
             </div>
 
         </div>

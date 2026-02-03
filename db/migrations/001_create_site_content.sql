@@ -1,3 +1,21 @@
+-- Migration: 001_create_site_content.sql
+-- Creates a simple key/value content store and inserts the app's initial content JSON.
+-- Run this in Supabase SQL editor or via psql connected to your Supabase database.
+
+BEGIN;
+
+-- 1) Create table
+CREATE TABLE IF NOT EXISTS public.site_content (
+  key text PRIMARY KEY,
+  value jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 2) Insert initial content (replace or extend as needed)
+INSERT INTO public.site_content (key, value)
+VALUES (
+  'site_content',
+  $$
 {
   "projects.section.title": "Explore Our Construction Excellence Projects",
   "contact.section.title": "Let's Build Something Great Together Today",
@@ -91,3 +109,29 @@
     }
   ]
 }
+  $$::jsonb
+)
+ON CONFLICT (key) DO UPDATE
+  SET value = EXCLUDED.value, updated_at = now();
+
+-- 3) Row Level Security and Policies
+ALTER TABLE IF EXISTS public.site_content ENABLE ROW LEVEL SECURITY;
+
+-- Allow public reads
+DROP POLICY IF EXISTS "public_select" ON public.site_content;
+CREATE POLICY "public_select" ON public.site_content
+  FOR SELECT
+  USING ( true );
+
+-- Allow writes only for authenticated users (admin accounts)
+DROP POLICY IF EXISTS "authenticated_writes" ON public.site_content;
+CREATE POLICY "authenticated_writes" ON public.site_content
+  FOR ALL
+  USING ( auth.role() = 'authenticated' )
+  WITH CHECK ( auth.role() = 'authenticated' );
+
+COMMIT;
+
+-- NOTE: Storage buckets are managed in Supabase Storage UI. Recommended bucket names: "site-assets" or "brochures".
+-- Create a public bucket in the Supabase dashboard and set public read (or use signed URLs).
+-- If you want uploads via the client, ensure the admin user signs in and has permissions to write to that bucket.

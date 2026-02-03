@@ -89,10 +89,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.getElementById('modalImage').src = getImageSrc(project.image);
 
+            // show video if present
+            const videoContainer = document.getElementById('modalVideo');
+            if (videoContainer) {
+                if (project.video) {
+                    videoContainer.style.display = 'block';
+                    videoContainer.innerHTML = createEmbedForVideo(project.video, 360);
+                } else {
+                    videoContainer.style.display = 'none';
+                    videoContainer.innerHTML = '';
+                }
+            }
+
             modal.classList.add('show');
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         }
     };
+
+    function createEmbedForVideo(url, height = 360) {
+        if (!url) return '';
+        const u = url.trim();
+        const ytMatch = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+        if (ytMatch && ytMatch[1]) {
+            const id = ytMatch[1];
+            return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+        }
+        if (u.match(/\.mp4(\?|$)/i)) {
+            return `<div class="video-embed" style="width:100%;"><video controls style="width:100%; max-height:${height}px;"> <source src="${u}" type="video/mp4">Your browser does not support the video tag.</video></div>`;
+        }
+        const vimeo = u.match(/vimeo\.com\/(\d+)/);
+        if (vimeo && vimeo[1]) {
+            return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://player.vimeo.com/video/${vimeo[1]}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+        }
+        return `<div class="video-embed"><a href="${u}" target="_blank">Open video</a></div>`;
+    }
 
     // Close Modal Logic
     document.querySelector('.close-modal').addEventListener('click', closeModal);

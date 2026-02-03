@@ -40,6 +40,7 @@ function showDashboard() {
     renderAdminProjects();
     renderServicesAdmin();
     renderContentManager();
+    renderBrochuresAdmin();
     updateDashboardCounts();
 }
 
@@ -125,13 +126,47 @@ function changePassword() {
     document.getElementById('settings_admin_password').value = '';
 }
 
+
+
 // ---------------- Supabase auth & sync ----------------
 function initSupabase() {
     try {
-        const url = window.NEXT_PUBLIC_SUPABASE_URL || document.querySelector('meta[name="supabase-url"]').content || '';
-        const key = window.NEXT_PUBLIC_SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-anon-key"]').content || '';
-        if (!url || !key) { console.warn('Supabase keys not found'); return; }
+        // Gather possible client-safe keys from multiple places (window, localStorage, meta tags)
+        const metaUrl = (document.querySelector('meta[name="supabase-url"]') && document.querySelector('meta[name="supabase-url"]').content) || '';
+        const metaKey = (document.querySelector('meta[name="supabase-anon-key"]') && document.querySelector('meta[name="supabase-anon-key"]').content) || '';
+
+        // window envs that might be injected at build time
+        const w = window || {};
+        const candidates = {
+            NEXT_PUBLIC_URL: w.NEXT_PUBLIC_SUPABASE_URL || w.NEXT_PUBLIC_SUPABASE_URL || null,
+            NEXT_PUBLIC_KEY: w.NEXT_PUBLIC_SUPABASE_ANON_KEY || w.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
+            SUPABASE_URL: w.SUPABASE_URL || null,
+            SUPABASE_ANON_KEY: w.SUPABASE_ANON_KEY || null,
+            SUPABASE_PUBLISHABLE_KEY: w.SUPABASE_PUBLISHABLE_KEY || w.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || null,
+            // Service role / DB keys should not be used client-side
+            SERVICE_ROLE: w.SUPABASE_SERVICE_ROLE_KEY || null,
+            POSTGRES_LIST: {
+                POSTGRES_URL: w.POSTGRES_URL || null,
+                POSTGRES_PRISMA_URL: w.POSTGRES_PRISMA_URL || null,
+                POSTGRES_URL_NON_POOLING: w.POSTGRES_URL_NON_POOLING || null,
+                POSTGRES_USER: w.POSTGRES_USER || null,
+                POSTGRES_HOST: w.POSTGRES_HOST || null,
+                POSTGRES_PASSWORD: w.POSTGRES_PASSWORD || null,
+                POSTGRES_DATABASE: w.POSTGRES_DATABASE || null
+            }
+        };
+
+        // Prefer explicit NEXT_PUBLIC*, then localStorage, then meta tags, then generic SUPABASE_ vars
+        const url = candidates.NEXT_PUBLIC_URL || localStorage.getItem('supabase_url') || metaUrl || candidates.SUPABASE_URL || '';
+        const key = candidates.NEXT_PUBLIC_KEY || localStorage.getItem('supabase_anon_key') || metaKey || candidates.SUPABASE_ANON_KEY || candidates.SUPABASE_PUBLISHABLE_KEY || '';
+
+        if (!url || !key) {
+            console.warn('Supabase keys not found');
+            supabaseClient = null; return;
+        }
+
         supabaseClient = supabaseJs.createClient(url, key);
+        console.info('Supabase initialized for', url);
 
         // listen to auth changes
         supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -274,7 +309,8 @@ async function renderAdminProjects() {
             category: p.category,
             image: p.image,
             description: p.description,
-            plainDescription: p.plain_description
+            plainDescription: p.plain_description,
+            video: p.video || p.video_url || ''
         }));
     }
 
@@ -452,7 +488,8 @@ async function saveProject(e) {
         title: document.getElementById('projectTitle').value,
         category: document.getElementById('projectCategory').value,
         description: formattedDescription,
-        plain_description: plainDescription
+        plain_description: plainDescription,
+        video: (document.getElementById('projectVideoLink') && document.getElementById('projectVideoLink').value) ? document.getElementById('projectVideoLink').value.trim() : ''
     };
 
     try {
@@ -476,7 +513,8 @@ async function saveProject(e) {
                 category: payload.category,
                 image: imagePath,
                 description: formattedDescription,
-                plainDescription: plainDescription
+                plainDescription: plainDescription,
+                video: payload.video || ''
             };
             if (id) {
                 const index = projects.findIndex(p => p.id === parseInt(id));
@@ -516,6 +554,8 @@ async function editProject(id) {
         document.getElementById('projectTitle').value = project.title || '';
         document.getElementById('projectCategory').value = project.category || '';
         document.getElementById('projectImagePath').value = project.image || ''; // Store current image path
+        // populate video link if present
+        const vidInput = document.getElementById('projectVideoLink'); if (vidInput) vidInput.value = project.video || project.video_url || '';
         // Use formatted HTML if editor, otherwise fill textarea
         const descEl = document.getElementById('projectDescription');
         if (descEl && descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') {
@@ -622,6 +662,8 @@ async function renderContentManager() {
         }
     } catch(e){ console.error('renderContentManager remote fetch error', e); }
 
+    // Ensure brochure editor fields are updated when content is loaded (local or remote)
+    if (typeof renderBrochuresAdmin === 'function') renderBrochuresAdmin();
     renderServicesAdmin();
 }
 
@@ -951,6 +993,22 @@ function updateProjectPreview() {
             document.getElementById('projPreviewDescription').innerHTML = formatDescription(desc);
         }
 
+        // video preview (optional)
+        try {
+            const vidEl = document.getElementById('projPreviewVideo');
+            const vidInput = document.getElementById('projectVideoLink');
+            const url = (vidInput && vidInput.value) ? vidInput.value.trim() : '';
+            if (vidEl) {
+                if (url) {
+                    vidEl.style.display = 'block';
+                    vidEl.innerHTML = createEmbedForVideo(url, 320);
+                } else {
+                    vidEl.style.display = 'none';
+                    vidEl.innerHTML = '';
+                }
+            }
+        } catch(e){}
+
         // If a temporary preview image exists (from file input), it will be stored on imgEl.dataset.temp
         if (imgEl && imgEl.dataset.temp) {
             imgEl.src = imgEl.dataset.temp;
@@ -970,7 +1028,7 @@ function updateProjectPreview() {
 }
 
 // wire up project input events
-['projectTitle','projectCategory','projectDescription'].forEach(id => {
+['projectTitle','projectCategory','projectDescription','projectVideoLink'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateProjectPreview);
 });
@@ -1032,6 +1090,175 @@ if (typeof window !== 'undefined') {
         syncWithJSON();
         loadContentData();
         initAdminUI();
+        // initialize Supabase client from code/meta-based envs
+        initSupabase();
         updateDashboardCounts();
     });
 }
+
+
+
+/* Brochures Management */
+function renderBrochuresAdmin() {
+    const d = window.__adminContent || {};
+
+    // clear status
+    const statusEl = document.getElementById('brochureUploadStatus'); if (statusEl) statusEl.textContent = '';
+
+    // Brochure 1 - Company Brochure
+    document.getElementById('content_brochure1_title').value = d['brochure1.title'] || 'Company Brochure';
+    document.getElementById('content_brochure1_description').value = d['brochure1.description'] || '';
+    document.getElementById('content_brochure1_pdf_path').value = d['brochure1.pdf_path'] || '';
+
+    // Show current PDF
+    const currentPdf1 = document.getElementById('brochure1_current_pdf');
+    if (currentPdf1) {
+      if (d['brochure1.pdf_path']) {
+          currentPdf1.innerHTML = `Current PDF: <a href="${d['brochure1.pdf_path']}" target="_blank">${d['brochure1.pdf_path']}</a>`;
+      } else {
+          currentPdf1.innerHTML = '';
+      }
+    }
+
+    // Brochure 2 - Personal Profile
+    document.getElementById('content_brochure2_title').value = d['brochure2.title'] || 'Personal Profile';
+    document.getElementById('content_brochure2_description').value = d['brochure2.description'] || '';
+    document.getElementById('content_brochure2_pdf_path').value = d['brochure2.pdf_path'] || '';
+
+    // Show current PDF
+    const currentPdf2 = document.getElementById('brochure2_current_pdf');
+    if (currentPdf2) {
+      if (d['brochure2.pdf_path']) {
+          currentPdf2.innerHTML = `Current PDF: <a href="${d['brochure2.pdf_path']}" target="_blank">${d['brochure2.pdf_path']}</a>`;
+      } else {
+          currentPdf2.innerHTML = '';
+      }
+    }
+}
+
+async function saveBrochures() {
+    const d = window.__adminContent || {};
+    const statusEl = document.getElementById('brochureUploadStatus');
+    const saveBtn = document.getElementById('saveBrochuresBtn');
+
+    function setStatus(msg, busy = false) {
+        if (statusEl) statusEl.textContent = msg || '';
+        if (saveBtn) saveBtn.disabled = !!busy;
+    }
+
+    async function uploadFileToBucket(file, bucket, dir = 'brochures') {
+        try {
+            const safeName = file.name.replace(/\s+/g,'_');
+            const path = `${dir}/${Date.now()}_${safeName}`;
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucket).upload(path, file, { upsert: true });
+            if (uploadError) throw uploadError;
+            const { data: publicData, error: publicError } = await supabaseClient.storage.from(bucket).getPublicUrl(path);
+            if (publicError) throw publicError;
+            return publicData && publicData.publicUrl ? publicData.publicUrl : null;
+        } catch (e) {
+            console.warn('upload error', e);
+            return null;
+        }
+    }
+
+// Helper to create embed HTML for video links (supports YouTube and direct mp4 links)
+function createEmbedForVideo(url, height = 210) {
+    if (!url) return '';
+    const u = url.trim();
+    // YouTube long URL
+    try {
+        const ytMatch = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+        if (ytMatch && ytMatch[1]) {
+            const id = ytMatch[1];
+            return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+        }
+        // direct mp4
+        if (u.match(/\.mp4(\?|$)/i)) {
+            return `<div class="video-embed" style="width:100%;"><video controls style="width:100%; max-height:${height}px;"> <source src="${u}" type="video/mp4">Your browser does not support the video tag.</video></div>`;
+        }
+        // Vimeo quick support
+        const vimeo = u.match(/vimeo\.com\/(\d+)/);
+        if (vimeo && vimeo[1]) {
+            return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://player.vimeo.com/video/${vimeo[1]}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+        }
+        // fallback: link
+        return `<div class="video-embed"><a href="${u}" target="_blank">Open video</a></div>`;
+    } catch (e) { return '';} }
+
+
+    // Collect fields (only title & description remain editable)
+    d['brochure1.title'] = document.getElementById('content_brochure1_title').value;
+    d['brochure1.description'] = document.getElementById('content_brochure1_description').value;
+    d['brochure2.title'] = document.getElementById('content_brochure2_title').value;
+    d['brochure2.description'] = document.getElementById('content_brochure2_description').value;
+
+    // default bucket (hidden from UI)
+    const bucketName = 'site-assets';
+
+    let user = null;
+    if (supabaseClient && supabaseClient.auth) {
+        try { const s = await supabaseClient.auth.getSession(); user = s && s.data && s.data.session ? s.data.session.user : null; } catch (e) { user = null; }
+    }
+
+    if (!user) {
+        if (!confirm('You are not signed in to Supabase. File uploads will not be possible. Continue and save content locally only?')) {
+            setStatus('Upload cancelled. Sign in to Supabase to enable uploads.');
+            return;
+        }
+    }
+
+    try {
+        setStatus('Preparing uploads...', true);
+
+        // Brochure 1 PDF
+        const pdf1Input = document.getElementById('brochure1_pdf');
+        if (pdf1Input && pdf1Input.files && pdf1Input.files[0]) {
+            const file = pdf1Input.files[0];
+            if (supabaseClient && user) {
+                setStatus(`Uploading ${file.name}...`, true);
+                const url = await uploadFileToBucket(file, bucketName, 'brochures');
+                if (url) d['brochure1.pdf_path'] = url;
+                else { d['brochure1.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
+            } else {
+                d['brochure1.pdf_path'] = `assets/${file.name}`;
+                alert(`Not signed in: please manually copy the PDF to assets/${file.name}`);
+            }
+        } else {
+            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value;
+        }
+
+
+        // Brochure 2 PDF
+        const pdf2Input = document.getElementById('brochure2_pdf');
+        if (pdf2Input && pdf2Input.files && pdf2Input.files[0]) {
+            const file = pdf2Input.files[0];
+            if (supabaseClient && user) {
+                setStatus(`Uploading ${file.name}...`, true);
+                const url = await uploadFileToBucket(file, bucketName, 'brochures');
+                if (url) d['brochure2.pdf_path'] = url;
+                else { d['brochure2.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
+            } else {
+                d['brochure2.pdf_path'] = `assets/${file.name}`;
+                alert(`Not signed in: please manually copy the PDF to assets/${file.name}`);
+            }
+        } else {
+            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;
+        }
+
+
+        window.__adminContent = d;
+
+        setStatus('Saving content...', true);
+        await saveContent();
+
+        setStatus('Brochures saved successfully.');
+        renderBrochuresAdmin();
+    } catch (e) {
+        console.error('saveBrochures error', e);
+        setStatus('Error saving brochures: ' + (e.message || e));
+        alert('Error saving brochures: ' + (e.message || e));
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+

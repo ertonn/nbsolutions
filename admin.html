@@ -260,7 +260,7 @@
           else {
             const ls = document.getElementById('loginScreen'); if (ls) ls.style.display = 'none';
             const ds = document.getElementById('adminDashboard'); if (ds) ds.style.display = 'block';
-            try { initAdminUI(); renderAdminProjects(); renderServicesAdmin(); renderContentManager(); updateDashboardCounts(); } catch(e) { /* ignore */ }
+            try { initAdminUI(); renderAdminProjects(); renderServicesAdmin(); renderContentManager(); renderBrochuresAdmin(); updateDashboardCounts(); } catch(e) { /* ignore */ }
           }
           error.style.display = 'none';
         } else {
@@ -282,6 +282,7 @@
                     <a href="#" data-section="projects-section" class="nav-link">Projects</a>
                     <a href="#" data-section="content-section" class="nav-link">Content</a>
                     <a href="#" data-section="services-section" class="nav-link">Services</a>
+                    <a href="#" data-section="brochures-section" class="nav-link">Brochures</a>
                     <a href="#" data-section="settings-section" class="nav-link">Settings</a>
                     <a href="index.html" target="_blank" class="nav-link" style="background:#e9eef5;color:#1b6fb3;">Preview Site</a>
                     <a href="#" id="sidebarLogout" class="nav-link logout-link" style="color:#ff4d4d;">Logout</a>
@@ -400,6 +401,53 @@
         </div>
     </section>
 
+    <section id="brochures-section" class="admin-section">
+        <h2>Brochures <span class="section-badge">Manage</span></h2>
+        <div class="content-card">
+            <h3>Company Brochure</h3>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="content_brochure1_title" class="large-input" placeholder="Company Brochure">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="content_brochure1_description" class="large-textarea" rows="3" placeholder="Explore our detailed portfolio and company vision..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>PDF File</label>
+                <input type="file" id="brochure1_pdf" accept=".pdf">
+                <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">PDF will be uploaded to Supabase storage or saved to the assets folder if uploads are not available.</small>
+                <input type="hidden" id="content_brochure1_pdf_path">
+                <div id="brochure1_current_pdf" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+            </div>
+        </div>
+
+        <div class="content-card" style="margin-top: 20px;">
+            <h3>Personal Profile</h3>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="content_brochure2_title" class="large-input" placeholder="Personal Profile">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="content_brochure2_description" class="large-textarea" rows="3" placeholder="Learn more about the founder's background..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>PDF File</label>
+                <input type="file" id="brochure2_pdf" accept=".pdf">
+                <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">PDF will be uploaded to Supabase storage or saved to the assets folder if uploads are not available.</small>
+                <input type="hidden" id="content_brochure2_pdf_path">
+                <div id="brochure2_current_pdf" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:12px; align-items:center; margin-top: 12px; justify-content:flex-end;">
+            <div id="brochureUploadStatus" style="font-size:13px;color:#666; margin-right:8px;">&nbsp;</div>
+            <button id="saveBrochuresBtn" class="cta-button" onclick="saveBrochures()">Save Brochures</button>
+            <button id="discardBrochuresBtn" class="cta-button" style="background:var(--light-gray); color:var(--black-color);" onclick="renderBrochuresAdmin()">Discard</button>
+        </div>
+    </section>
+
     <section id="settings-section" class="admin-section">
         <h2>Settings <span class="section-badge">Admin</span></h2>
         <div class="content-card">
@@ -414,6 +462,7 @@
                 <button class="cta-button" style="background:#e9f6ee; color:#0a6f3a;" onclick="testServerSave()">Test Server Save</button>
                 <span id="serverSaveStatus" style="margin-left:8px;color:#666;">Server: <em>unknown</em></span>
             </div>
+
 
         </div>
     </section>
@@ -475,6 +524,13 @@
                             <small style="display: block; margin-top: 5px; color: var(--text-color); opacity: 0.7;">Image will be saved to: assets/images/different categories/projects/</small>
                             <input type="hidden" id="projectImagePath">
                         </div>
+
+                        <div class="form-group">
+                            <label>Video Link (optional)</label>
+                            <input type="text" id="projectVideoLink" placeholder="https://youtu.be/.. or https://example.com/video.mp4">
+                            <div class="small-muted">If provided, a preview will appear in the project card viewer and public modal.</div>
+                        </div>
+
                         <div class="form-group full-width">
                             <label>Description</label>
                             <div class="wysiwyg-toolbar" role="toolbar" aria-label="Project description formatting">
@@ -499,6 +555,7 @@
                     <h3 id="projPreviewTitle">Project Title</h3>
                     <div class="muted" id="projPreviewCategory">Category</div>
                     <div style="margin-top:10px;" id="projPreviewDescription">Short description preview will appear here.</div>
+                    <div id="projPreviewVideo" style="margin-top:12px; display:none;"></div>
                 </aside>
             </form>
         </div>

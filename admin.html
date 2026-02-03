@@ -7,6 +7,11 @@
     <title>Admin Dashboard – NB Engineering Consulting</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/media-queries.css">
+    <!-- Supabase keys are set via Vercel environment variables. Add your own values in production. -->
+    <meta name="supabase-url" content="">
+    <meta name="supabase-anon-key" content="">
+    <!-- Supabase JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         .admin-login-wrapper {
             height: 100vh;
@@ -154,8 +159,11 @@
         .content-card h3 { margin-top: 0; }        /* Add consistent spacing between inner sections */
         .content-card .form-group { margin-bottom: 18px; }
         .content-card .section-block { margin-top: 22px; }        .wysiwyg-toolbar { display:flex; gap:6px; margin-bottom:8px; }
-        .wysiwyg-toolbar button { padding:6px 8px; }
+        .wysiwyg-toolbar button { padding:6px 8px; border-radius:6px; border:1px solid #e6e9ef; background:#fff; cursor:pointer; }
+        .wysiwyg-toolbar button.active { background:var(--accent-color); color:#fff; border-color: rgba(0,0,0,0.04); }
+        .wysiwyg-toolbar button[aria-pressed="true"] { box-shadow: inset 0 -2px 0 rgba(0,0,0,0.06); }
         .wysiwyg-editor { min-height:120px; border:1px solid #ddd; padding:10px; border-radius:6px; }
+        .wysiwyg-toolbar[role="toolbar"] { align-items:center; }
 
         /* Large inputs for prominent titles/descriptions */
         .large-input { padding:14px; font-size:16px; border-radius:8px; border:1px solid #d7dbe0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
@@ -230,13 +238,16 @@
                 <h2>Admin Login</h2>
             </div>
             <div class="form-group">
-                <label>Access Password</label>
+                <label>Email</label>
+                <input type="email" id="adminEmail" placeholder="admin@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
                 <input type="password" id="adminPassword" placeholder="Enter password">
             </div>
-            <button onclick="checkPassword()" class="cta-button" style="width: 100%; margin-top: 20px;">LOGIN TO
-                DASHBOARD</button>
-            <p id="loginError" style="color: red; margin-top: 15px; text-align: center; display: none;">Incorrect
-                password. Please try again.</p>
+            <button onclick="supabaseSignIn()" class="cta-button" style="width: 100%; margin-top: 20px;">SIGN IN</button>
+            <p id="loginError" style="color: red; margin-top: 15px; text-align: center; display: none;"></p>
+            <p id="loginHelp" style="color:var(--text-color); margin-top:8px; text-align:center; font-size:13px;">Use your Supabase admin account to sign in.</p>
         </div>
     </div>
 
@@ -293,12 +304,12 @@
 
                 <div style="margin-top:12px;">
                     <label>About Section Description (Homepage) (WYSIWYG)</label>
-                    <div class="wysiwyg-toolbar">
-                        <button type="button" onclick="execWysiwyg('bold')"><b>B</b></button>
-                        <button type="button" onclick="execWysiwyg('italic')"><i>I</i></button>
-                        <button type="button" onclick="execWysiwyg('insertUnorderedList')">• List</button>
-                        <button type="button" onclick="execWysiwyg('insertOrderedList')">1. List</button>
-                        <button type="button" onclick="createLinkPrompt()">Link</button>
+                    <div class="wysiwyg-toolbar" role="toolbar" aria-label="Formatting options">
+                        <button type="button" data-command="bold" aria-label="Bold" onclick="execWysiwyg('bold')"><b>B</b></button>
+                        <button type="button" data-command="italic" aria-label="Italic" onclick="execWysiwyg('italic')"><i>I</i></button>
+                        <button type="button" data-command="insertUnorderedList" aria-label="Unordered List" onclick="execWysiwyg('insertUnorderedList')">• List</button>
+                        <button type="button" data-command="insertOrderedList" aria-label="Ordered List" onclick="execWysiwyg('insertOrderedList')">1. List</button>
+                        <button type="button" data-command="createLink" aria-label="Insert Link" onclick="createLinkPrompt()">Link</button>
                     </div>
                     <div id="content_homepage_about_desc" class="wysiwyg-editor" contenteditable="true" data-placeholder="Write the short 'Who We Are' text for the homepage. Use the toolbar for basic formatting."></div>
                     <div class="small-muted">This short description will appear on the homepage About section.</div>
@@ -379,6 +390,11 @@
             </div>
             <div style="margin-top:12px;">
                 <button class="cta-button" onclick="changePassword()">Save Password</button>
+                <button class="cta-button" style="background:#ddd; color:#111; margin-left:8px;" onclick="migrateLocalData()">Migrate Local Data</button>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+                <div id="signedInAs" style="font-size:13px;color:var(--text-color);opacity:0.9;"></div>
+                <button id="supabaseSignOutBtn" class="cta-button" style="background:#ff4d4d; display:none;">Sign Out</button>
             </div>
         </div>
     </section>
@@ -442,8 +458,15 @@
                         </div>
                         <div class="form-group full-width">
                             <label>Description</label>
-                            <textarea id="projectDescription" rows="8" required placeholder="Enter project description. Use '- ' for bullets or '1. ' for numbered lists."></textarea>
-                            <small class="small-muted">Formatting tips: Use '- ' for bullets, '1. ' for numbers; line breaks are preserved. This field converts plain text into HTML lists for the public project page.</small>
+                            <div class="wysiwyg-toolbar" role="toolbar" aria-label="Project description formatting">
+                                <button type="button" data-command="bold" aria-label="Bold" onclick="execWysiwyg('bold')"><b>B</b></button>
+                                <button type="button" data-command="italic" aria-label="Italic" onclick="execWysiwyg('italic')"><i>I</i></button>
+                                <button type="button" data-command="insertUnorderedList" aria-label="Unordered List" onclick="execWysiwyg('insertUnorderedList')">• List</button>
+                                <button type="button" data-command="insertOrderedList" aria-label="Ordered List" onclick="execWysiwyg('insertOrderedList')">1. List</button>
+                                <button type="button" data-command="createLink" aria-label="Insert Link" onclick="createLinkPrompt()">Link</button>
+                            </div>
+                            <div id="projectDescription" class="wysiwyg-editor" contenteditable="true" data-placeholder="Enter project description. Use the toolbar for basic formatting (bold, lists, links)."></div>
+                            <small class="small-muted">Use the toolbar for basic formatting. This editor stores formatted HTML for the public project page.</small>
                         </div>
                     </div>
                     <div style="margin-top: 20px; display: flex; gap: 12px;">

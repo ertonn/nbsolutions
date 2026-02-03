@@ -1,11 +1,16 @@
-let ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin'; // stored locally if set
+// Supabase client (initialized at DOMContentLoaded)
+let supabase = null;
+let ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin'; // kept for fallback
 const STORAGE_KEY = "nb_projects_data";
 
 document.addEventListener('DOMContentLoaded', () => {
+    initSupabase();
     if (localStorage.getItem('admin_logged_in') === 'true') {
         showDashboard();
     }
     syncWithJSON(); // Ensure local storage has initial data
+    // if supabase is configured, check auth and sync
+    if (supabase) checkAuthState();
 });
 
 function checkPassword() {
@@ -61,13 +66,18 @@ function initAdminUI() {
     // Sidebar links
     document.querySelectorAll('.sidebar .nav-link').forEach(el => {
         el.addEventListener('click', function(e){
-            e.preventDefault();
+            // handle logout shortcut first
+            if (this.id === 'sidebarLogout') { e.preventDefault(); logout(); return; }
+
             const section = this.getAttribute('data-section');
-            if (!section) return;
-            if (this.id === 'sidebarLogout') { logout(); return; }
-            document.querySelectorAll('.sidebar .nav-link').forEach(a => a.classList.remove('active'));
-            this.classList.add('active');
-            showSection(section);
+            // If the link has a data-section attribute we handle it via SPA behavior
+            if (section) {
+                e.preventDefault();
+                document.querySelectorAll('.sidebar .nav-link').forEach(a => a.classList.remove('active'));
+                this.classList.add('active');
+                showSection(section);
+            }
+            // Otherwise allow normal link navigation (for example the Preview Site which opens index.html)
         });
     });
 
@@ -111,6 +121,77 @@ function changePassword() {
     if (!p) { alert('Enter a new password'); return; }
     localStorage.setItem('nb_admin_pass', p);
     ADMIN_PASSWORD = p;
+}
+
+// ---------------- Supabase auth & sync ----------------
+function initSupabase() {
+    try {
+        const url = window.NEXT_PUBLIC_SUPABASE_URL || document.querySelector('meta[name="supabase-url"]').content || '';
+        const key = window.NEXT_PUBLIC_SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-anon-key"]').content || '';
+        if (!url || !key) { console.warn('Supabase keys not found'); return; }
+        supabase = supabaseJs.createClient(url, key);
+
+        // listen to auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) onSignedIn(session.user);
+            else { document.getElementById('signedInAs').textContent = ''; document.getElementById('supabaseSignOutBtn').style.display = 'none'; }
+        });
+    } catch (e) { console.error('initSupabase error', e); }
+}
+
+async function checkAuthState() {
+    if (!supabase) return;
+    try {
+        const { data } = await supabase.auth.getSession();
+        if (data && data.session && data.session.user) {
+            onSignedIn(data.session.user);
+        }
+    } catch (e) { console.error('checkAuthState', e); }
+}
+
+async function supabaseSignIn() {
+    if (!supabase) { document.getElementById('loginError').textContent = 'Supabase not configured'; document.getElementById('loginError').style.display = 'block'; return; }
+    const email = document.getElementById('adminEmail').value.trim();
+    const pass = document.getElementById('adminPassword').value;
+    try {
+        const res = await supabase.auth.signInWithPassword({ email, password: pass });
+        if (res.error) throw res.error;
+        if (res.data && res.data.user) {
+            localStorage.setItem('admin_logged_in', 'true');
+            onSignedIn(res.data.user);
+            showDashboard();
+            document.getElementById('loginError').style.display = 'none';
+        }
+    } catch (e) {
+        document.getElementById('loginError').textContent = e.message || 'Sign-in failed';
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
+async function supabaseSignOut() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    localStorage.removeItem('admin_logged_in');
+    document.getElementById('signedInAs').textContent = '';
+    document.getElementById('supabaseSignOutBtn').style.display = 'none';
+    location.reload();
+}
+
+async function onSignedIn(user) {
+    const email = user.email || (user.user_metadata && user.user_metadata.email) || '';
+    const el = document.getElementById('signedInAs');
+    if (el) el.textContent = 'Signed in as ' + email;
+    const outBtn = document.getElementById('supabaseSignOutBtn'); if (outBtn) outBtn.style.display = 'inline-block';
+
+    // fetch remote content and projects and sync
+    try {
+        const remoteContent = await fetchContentRemote();
+        if (remoteContent) { window.__adminContent = Object.assign({}, remoteContent, window.__adminContent || {}); renderContentManager(); if (window.__contentLoader) window.__contentLoader.update(window.__adminContent); }
+        const remoteProjects = await fetchProjectsRemote();
+        if (remoteProjects && Array.isArray(remoteProjects)) { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteProjects)); }
+        renderAdminProjects(); renderServicesAdmin(); updateDashboardCounts();
+    } catch (e) { console.error('onSignedIn sync error', e); }
+}
     alert('Password updated (local only).');
     document.getElementById('settings_admin_password').value = '';
 }
@@ -171,17 +252,33 @@ function toggleProjectForm(isEdit = false) {
             // ensure preview starts fresh
             if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.png'; }
             updateProjectPreview();
+            // ensure WYSIWYG toolbar reflects the editor state
+            setTimeout(()=>{ updateWysiwygToolbarState(); }, 60);
         } else {
             // editing existing: remove required from image input since it may already exist
             document.getElementById('projectImage').removeAttribute('required');
             setTimeout(() => document.getElementById('projectTitle').focus(), 50);
             updateProjectPreview();
+            setTimeout(()=>{ updateWysiwygToolbarState(); }, 60);
         }
     }
 } 
 
-function renderAdminProjects() {
-    const projects = getProjects();
+async function renderAdminProjects() {
+    // prefer remote projects when available
+    let projects = getProjects();
+    if (supabase) {
+        const remote = await fetchProjectsRemote();
+        if (remote && Array.isArray(remote)) projects = remote.map(p => ({
+            id: p.id,
+            title: p.title,
+            category: p.category,
+            image: p.image,
+            description: p.description,
+            plainDescription: p.plain_description
+        }));
+    }
+
     const list = document.getElementById('adminProjectList');
     list.innerHTML = '';
 
@@ -207,9 +304,9 @@ function renderAdminProjects() {
     filtered.forEach(project => {
         const item = document.createElement('div');
         item.className = 'admin-project-item';
-        // try to render preview image stored in localStorage: 'img_<filename>'
+        // try to render preview image (remote URL or base64 stored locally)
         const filename = project.image ? project.image.split('/').pop() : '';
-        const preview = filename ? (localStorage.getItem('img_' + filename) || project.image) : '';
+        const preview = filename ? (localStorage.getItem('img_' + filename) || project.image) : project.image;
         item.innerHTML = `
             <div style="display:flex; gap:12px; align-items:center;">
                 <img src="${preview || 'assets/images/icons/placeholder.png'}" alt="" style="height:64px;width:64px;object-fit:cover;border-radius:8px;">
@@ -328,75 +425,121 @@ async function handleImageUpload(fileInput) {
 async function saveProject(e) {
     e.preventDefault();
     const id = document.getElementById('editId').value;
-    const projects = getProjects();
 
-    // Handle image upload
+    // Handle image file (if user selected a new file)
     const imageInput = document.getElementById('projectImage');
-    let imagePath = document.getElementById('projectImagePath').value; // For edit mode
+    const fileBlob = (imageInput && imageInput.files && imageInput.files[0]) ? imageInput.files[0] : null;
 
-    if (imageInput.files && imageInput.files[0]) {
-        imagePath = await handleImageUpload(imageInput);
+    // Handle description (WYSIWYG or plain)
+    const descEl = document.getElementById('projectDescription');
+    let formattedDescription = '';
+    let plainDescription = '';
+
+    if (descEl && descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') {
+        formattedDescription = descEl.innerHTML.trim();
+        plainDescription = descEl.innerText.trim();
+    } else {
+        plainDescription = (descEl && descEl.value) ? descEl.value : '';
+        formattedDescription = formatDescription(plainDescription);
     }
 
-    if (!imagePath) {
-        alert('Please select an image');
-        return;
-    }
-
-    // Format description from plain text to HTML
-    const plainDescription = document.getElementById('projectDescription').value;
-    const formattedDescription = formatDescription(plainDescription);
-
-    const newProject = {
-        id: id ? parseInt(id) : Date.now(),
+    const payload = {
+        id: id ? parseInt(id) : null,
         title: document.getElementById('projectTitle').value,
         category: document.getElementById('projectCategory').value,
-        image: imagePath,
         description: formattedDescription,
-        plainDescription: plainDescription // Store original for editing
+        plain_description: plainDescription
     };
 
-    if (id) {
-        const index = projects.findIndex(p => p.id === parseInt(id));
-        projects[index] = newProject;
-    } else {
-        projects.push(newProject);
-    }
+    try {
+        if (supabase) {
+            const saved = await saveProjectRemote(payload, fileBlob);
+            // Update local mirror
+            const projects = getProjects();
+            const idx = projects.findIndex(p=>p.id === (saved && saved.id));
+            const localObj = { id: saved.id, title: saved.title, category: saved.category, image: saved.image, description: saved.description, plainDescription: saved.plain_description };
+            if (idx !== -1) projects[idx] = localObj; else projects.push(localObj);
+            saveProjects(projects);
+        } else {
+            // fallback: local storage handling (base64 image)
+            let imagePath = document.getElementById('projectImagePath').value;
+            if (fileBlob) imagePath = await handleImageUpload(imageInput);
+            if (!imagePath) { alert('Please select an image'); return; }
+            const projects = getProjects();
+            const newProject = {
+                id: id ? parseInt(id) : Date.now(),
+                title: payload.title,
+                category: payload.category,
+                image: imagePath,
+                description: formattedDescription,
+                plainDescription: plainDescription
+            };
+            if (id) {
+                const index = projects.findIndex(p => p.id === parseInt(id));
+                projects[index] = newProject;
+            } else {
+                projects.push(newProject);
+            }
+            saveProjects(projects);
+        }
 
-    saveProjects(projects);
-    toggleProjectForm();
-    renderAdminProjects();
-    alert("Project saved successfully!");
+        toggleProjectForm();
+        await renderAdminProjects();
+        alert('Project saved successfully!');
+    } catch (e) {
+        console.error('saveProject error', e);
+        alert('Error saving project: ' + (e.message || e));
+    }
 }
 
-function editProject(id) {
-    const projects = getProjects();
-    const project = projects.find(p => p.id === id);
+async function editProject(id) {
+    let project = null;
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+            if (!error) project = data;
+        } catch (e) { console.error('fetch project', e); }
+    }
+
+    if (!project) {
+        const projects = getProjects();
+        project = projects.find(p => p.id === id);
+    }
 
     if (project) {
         document.getElementById('formTitle').textContent = "Edit Project";
         document.getElementById('editId').value = project.id;
-        document.getElementById('projectTitle').value = project.title;
-        document.getElementById('projectCategory').value = project.category;
-        document.getElementById('projectImagePath').value = project.image; // Store current image path
-        // Use plain description if available, otherwise use formatted
-        document.getElementById('projectDescription').value = project.plainDescription || project.description;
+        document.getElementById('projectTitle').value = project.title || '';
+        document.getElementById('projectCategory').value = project.category || '';
+        document.getElementById('projectImagePath').value = project.image || ''; // Store current image path
+        // Use formatted HTML if editor, otherwise fill textarea
+        const descEl = document.getElementById('projectDescription');
+        if (descEl && descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') {
+            descEl.innerHTML = project.description || project.plainDescription || '';
+        } else if (descEl) {
+            descEl.value = project.plainDescription || project.description || '';
+        }
 
         // Remove required from image input when editing (already has image)
         document.getElementById('projectImage').removeAttribute('required');
 
         toggleProjectForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateProjectPreview();
     }
 }
 
-function deleteProject(id) {
-    if (confirm("Are you sure you want to delete this project?")) {
+async function deleteProject(id) {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    try {
+        if (supabase) {
+            await deleteProjectRemote(id);
+        }
         let projects = getProjects();
         projects = projects.filter(p => p.id !== id);
         saveProjects(projects);
-        renderAdminProjects();
-    }
+        await renderAdminProjects();
+    } catch (e) { console.error('deleteProject error', e); alert('Delete failed: ' + (e.message || e)); }
 }
 
 /* ------------------ Content management (WYSIWYG) ------------------ */
@@ -427,7 +570,7 @@ async function loadContentData() {
     }
 }
 
-function renderContentManager() {
+async function renderContentManager() {
     const d = window.__adminContent || {};
     document.getElementById('content_projects_section_title').value = d['projects.section.title'] || '';
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
@@ -446,17 +589,89 @@ function renderContentManager() {
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
     document.getElementById('content_contact_features').value = (d['contact.features'] || []).join('\n');
 
+    // if supabase present and signed in, try to pull content from remote (site_content)
+    try {
+        if (supabase) {
+            const remote = await fetchContentRemote();
+            if (remote) {
+                window.__adminContent = Object.assign({}, remote, window.__adminContent || {});
+                // re-populate with remote content
+                document.getElementById('content_projects_section_title').value = window.__adminContent['projects.section.title'] || document.getElementById('content_projects_section_title').value;
+                document.getElementById('content_homepage_hero_title').value = window.__adminContent['homepage.hero.title'] || document.getElementById('content_homepage_hero_title').value;
+                document.getElementById('content_homepage_hero_desc').value = window.__adminContent['homepage.hero.desc'] || document.getElementById('content_homepage_hero_desc').value;
+                document.getElementById('content_homepage_about_title').value = window.__adminContent['homepage.about.title'] || document.getElementById('content_homepage_about_title').value;
+                document.getElementById('content_homepage_about_desc').innerHTML = window.__adminContent['homepage.about.desc'] || document.getElementById('content_homepage_about_desc').innerHTML;
+                document.getElementById('content_services_hero_title').value = window.__adminContent['services.hero.title'] || document.getElementById('content_services_hero_title').value;
+                document.getElementById('content_services_hero_desc').value = window.__adminContent['services.hero.desc'] || document.getElementById('content_services_hero_desc').value;
+                document.getElementById('content_contact_features').value = (window.__adminContent['contact.features'] || []).join('\n') || document.getElementById('content_contact_features').value;
+            }
+        }
+    } catch(e){ console.error('renderContentManager remote fetch error', e); }
+
     renderServicesAdmin();
 }
 
-function execWysiwyg(command) {
-    document.execCommand(command, false, null);
+// WYSIWYG helpers: save/restore selection so toolbar buttons work reliably across browsers
+let __wysiwygSelectionRange = null;
+
+function saveWysiwygSelection() {
+    try {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            __wysiwygSelectionRange = sel.getRangeAt(0).cloneRange();
+        }
+    } catch(e){ __wysiwygSelectionRange = null; }
+}
+
+function restoreWysiwygSelection() {
+    try {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        if (__wysiwygSelectionRange) sel.addRange(__wysiwygSelectionRange);
+    } catch(e){}
+}
+
+function updateWysiwygToolbarState() {
+    document.querySelectorAll('.wysiwyg-toolbar button[data-command]').forEach(btn => {
+        const cmd = btn.getAttribute('data-command');
+        try {
+            const active = document.queryCommandState(cmd);
+            if (active) btn.classList.add('active'); else btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        } catch(e){ btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); }
+    });
+}
+
+function execWysiwyg(command, value = null) {
+    // restore selection (saved on editor events) before issuing command
+    restoreWysiwygSelection();
+    try {
+        document.execCommand(command, false, value || null);
+    } catch(e){}
+    updateWysiwygToolbarState();
 }
 
 function createLinkPrompt() {
     const url = prompt('Enter URL (https://...)');
-    if (url) document.execCommand('createLink', false, url);
+    if (url) execWysiwyg('createLink', url);
 }
+
+// wire up wysiwyg editors to save selection on interactions and update toolbar state
+document.querySelectorAll('.wysiwyg-editor').forEach(editor => {
+    editor.addEventListener('mouseup', saveWysiwygSelection);
+    editor.addEventListener('keyup', (e)=>{ saveWysiwygSelection(); updateWysiwygToolbarState(); });
+    editor.addEventListener('input', (e)=>{ saveWysiwygSelection(); updateWysiwygToolbarState(); });
+    editor.addEventListener('focus', (e)=>{ saveWysiwygSelection(); updateWysiwygToolbarState(); });
+});
+
+// when selection changes anywhere, update toolbar if inside an editor
+document.addEventListener('selectionchange', function(){
+    const active = document.activeElement;
+    if (active && active.classList && active.classList.contains('wysiwyg-editor')) {
+        saveWysiwygSelection();
+        updateWysiwygToolbarState();
+    }
+});
 
 function discardContentEdits() {
     if (confirm('Discard unsaved content edits?')) renderContentManager();
@@ -484,15 +699,23 @@ async function saveContent() {
 
     // try to POST to API if available
     try {
-        const res = await fetch('/api/content', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(d)
-        });
-        if (res.ok) {
-            alert('Content saved to server.');
+        if (supabase) {
+            // save into site_content table under key 'site_content'
+            const payload = { key: 'site_content', value: d, updated_at: new Date() };
+            const { data, error } = await supabase.from('site_content').upsert(payload, { onConflict: 'key' });
+            if (error) throw error;
+            alert('Content saved to Supabase.');
         } else {
-            throw new Error('Server responded ' + res.status);
+            const res = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(d)
+            });
+            if (res.ok) {
+                alert('Content saved to server.');
+            } else {
+                throw new Error('Server responded ' + res.status);
+            }
         }
     } catch (e) {
         // fallback: save locally
@@ -512,6 +735,16 @@ function exportContent() {
     const a = document.createElement('a');
     a.href = url; a.download = 'content.json';
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// fetch content object from Supabase site_content table
+async function fetchContentRemote() {
+    if (!supabase) return null;
+    try {
+        const { data, error } = await supabase.from('site_content').select('value').eq('key','site_content').single();
+        if (error) throw error;
+        return data ? data.value : null;
+    } catch(e){ console.error('fetchContentRemote error', e); return null; }
 }
 
 
@@ -651,12 +884,22 @@ function updateProjectPreview() {
     try {
         const title = document.getElementById('projectTitle')?.value || 'Project Title';
         const category = document.getElementById('projectCategory')?.value || '';
-        const desc = document.getElementById('projectDescription')?.value || '';
+        const descEl = document.getElementById('projectDescription');
+        let desc = '';
+        if (descEl) {
+            if (descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') desc = descEl.innerHTML || '';
+            else desc = descEl.value || '';
+        }
         const imgEl = document.getElementById('projectImagePreview');
 
         document.getElementById('projPreviewTitle').textContent = title;
         document.getElementById('projPreviewCategory').textContent = category;
-        document.getElementById('projPreviewDescription').innerHTML = formatDescription(desc);
+        // if the description contains HTML, use it directly; otherwise format plain text
+        if (desc.trim().startsWith('<') || desc.trim().includes('<p') || desc.trim().includes('<ul') || desc.trim().includes('<br')) {
+            document.getElementById('projPreviewDescription').innerHTML = desc;
+        } else {
+            document.getElementById('projPreviewDescription').innerHTML = formatDescription(desc);
+        }
 
         // If a temporary preview image exists (from file input), it will be stored on imgEl.dataset.temp
         if (imgEl && imgEl.dataset.temp) {

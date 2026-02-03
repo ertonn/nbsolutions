@@ -1390,6 +1390,14 @@ html {
     border-top: 1px solid var(--light-gray);
 }
 
+/* Alternate brochure uses a subtle gray background for visual distinction */
+.brochure-section.duplicate {
+    background-color: var(--light-gray);
+}
+.brochure-section.duplicate .brochure-content {
+    color: var(--black-color);
+}
+
 .brochure-container {
     max-width: 1200px;
     margin: 0 auto;

@@ -106,14 +106,14 @@ function initAdminUI() {
                 m.classList.remove('active');
                 m.setAttribute('aria-hidden','true');
                 // clear any temp preview data
-                const img = document.getElementById('projectImagePreview'); if (img) { delete img.dataset.temp; img.src = 'assets/images/icons/placeholder.png'; }
+                const img = document.getElementById('projectImagePreview'); if (img) { delete img.dataset.temp; img.src = 'assets/images/icons/placeholder.svg'; }
                 const sicon = document.getElementById('serviceIconPreview'); if (sicon && !sicon.src.includes('data:')) { /* keep existing */ } else if (sicon) { sicon.src = ''; sicon.style.display = 'none'; }
             }
         });
     });
 
     // close modals with Escape (clear temp previews)
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { document.querySelectorAll('.modal-backdrop.active').forEach(m => { m.classList.remove('active'); m.setAttribute('aria-hidden','true'); }); const img = document.getElementById('projectImagePreview'); if (img) { delete img.dataset.temp; img.src = 'assets/images/icons/placeholder.png'; } } });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { document.querySelectorAll('.modal-backdrop.active').forEach(m => { m.classList.remove('active'); m.setAttribute('aria-hidden','true'); }); const img = document.getElementById('projectImagePreview'); if (img) { delete img.dataset.temp; img.src = 'assets/images/icons/placeholder.svg'; } } });
 } 
 
 function changePassword() {
@@ -237,7 +237,7 @@ function toggleProjectForm(isEdit = false) {
         actualForm.reset();
         document.getElementById('editId').value = '';
         document.getElementById('projectImagePath').value = '';
-        if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.png'; }
+        if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
     } else {
         modal.classList.add('active');
         modal.setAttribute('aria-hidden','false');
@@ -249,7 +249,7 @@ function toggleProjectForm(isEdit = false) {
             document.getElementById('projectImage').setAttribute('required', 'required');
             setTimeout(() => document.getElementById('projectTitle').focus(), 50);
             // ensure preview starts fresh
-            if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.png'; }
+            if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
             updateProjectPreview();
             // ensure WYSIWYG toolbar reflects the editor state
             setTimeout(()=>{ updateWysiwygToolbarState(); }, 60);
@@ -305,10 +305,10 @@ async function renderAdminProjects() {
         item.className = 'admin-project-item';
         // try to render preview image (remote URL or base64 stored locally)
         const filename = project.image ? project.image.split('/').pop() : '';
-        const preview = filename ? (localStorage.getItem('img_' + filename) || project.image) : project.image;
+        const preview = filename ? (localStorage.getItem('img_' + filename) || project.image) : project.image || 'assets/images/icons/placeholder.svg';
         item.innerHTML = `
             <div style="display:flex; gap:12px; align-items:center;">
-                <img src="${preview || 'assets/images/icons/placeholder.png'}" alt="" style="height:64px;width:64px;object-fit:cover;border-radius:8px;">
+                <img src="${preview || 'assets/images/icons/placeholder.svg'}" alt="" style="height:64px;width:64px;object-fit:cover;border-radius:8px;">
                 <div class="admin-project-info">
                     <h3>${project.title}</h3>
                     <p>${project.category}</p>
@@ -425,6 +425,11 @@ async function saveProject(e) {
     e.preventDefault();
     const id = document.getElementById('editId').value;
 
+    // Warn user when saving locally due to missing server
+    if (!supabaseClient) {
+        if (!confirm('No server available: this project will be saved only locally. Continue?')) return;
+    }
+
     // Handle image file (if user selected a new file)
     const imageInput = document.getElementById('projectImage');
     const fileBlob = (imageInput && imageInput.files && imageInput.files[0]) ? imageInput.files[0] : null;
@@ -451,7 +456,7 @@ async function saveProject(e) {
     };
 
     try {
-        if (supabase) {
+        if (supabaseClient) {
             const saved = await saveProjectRemote(payload, fileBlob);
             // Update local mirror
             const projects = getProjects();
@@ -493,7 +498,7 @@ async function saveProject(e) {
 
 async function editProject(id) {
     let project = null;
-    if (supabase) {
+    if (supabaseClient) {
         try {
             const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
             if (!error) project = data;
@@ -530,8 +535,11 @@ async function editProject(id) {
 
 async function deleteProject(id) {
     if (!confirm("Are you sure you want to delete this project?")) return;
+    if (!supabaseClient) {
+        alert('No server available: deletion will be local only.');
+    }
     try {
-        if (supabase) {
+        if (supabaseClient) {
             await deleteProjectRemote(id);
         }
         let projects = getProjects();
@@ -597,7 +605,7 @@ async function renderContentManager() {
 
     // if supabase present and signed in, try to pull content from remote (site_content)
     try {
-        if (supabase) {
+        if (supabaseClient) {
             const remote = await fetchContentRemote();
             if (remote) {
                 window.__adminContent = Object.assign({}, remote, window.__adminContent || {});
@@ -737,6 +745,17 @@ async function saveContent() {
     updateDashboardCounts();
 }
 
+// Wrapper that confirms local fallback when server is not available
+async function saveContentWithConfirm() {
+    if (supabaseClient) {
+        await saveContent();
+        return;
+    }
+    // Server not configured — warn user that save will be local
+    if (!confirm('No server available: your changes will be saved locally and not persisted remotely. Continue?')) return;
+    await saveContent();
+}
+
 // Test server endpoint for saving content (used by Settings UI)
 async function testServerSave() {
     try {
@@ -789,7 +808,7 @@ function renderServicesAdmin() {
         div.className = 'service-item';
         div.innerHTML = `
             <div style="display:flex; gap:10px; align-items:center;">
-                <img src="${s.icon||s.iconData||'assets/images/icons/placeholder.png'}" alt="" />
+                <img src="${s.icon||s.iconData||'assets/images/icons/placeholder.svg'}" alt="" />
                 <div>
                     <div style="font-weight:700">${s.title||'(no title)'}</div>
                     <div class="small-muted">${(s.list||[]).slice(0,2).join(' • ')}</div>
@@ -942,9 +961,9 @@ function updateProjectPreview() {
                 const filename = path.split('/').pop();
                 const stored = filename ? localStorage.getItem('img_' + filename) : null;
                 if (stored) imgEl.src = stored;
-                else imgEl.src = 'assets/images/icons/placeholder.png';
+                else imgEl.src = 'assets/images/icons/placeholder.svg';
             } else {
-                imgEl.src = 'assets/images/icons/placeholder.png';
+                imgEl.src = 'assets/images/icons/placeholder.svg';
             }
         }
     } catch(e){}

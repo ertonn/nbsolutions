@@ -353,8 +353,9 @@
                     <div class="small-muted">Enter one bullet per line; these appear under the Contact CTA title on the homepage.</div>
                 </div>
 
-                <div style="margin-top:18px; display:flex; gap:10px;">
-                    <button class="cta-button" onclick="saveContent()">Save Content</button>
+                <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
+                    <button class="cta-button" onclick="saveContentWithConfirm()">Save Content</button>
+                    <div style="font-size:12px; color:#666;">(Saved to server if available, otherwise saved locally)</div>
                     <button class="cta-button" style="background:var(--light-gray); color:var(--black-color);" onclick="discardContentEdits()">Discard</button>
                     <button class="cta-button" style="background:#f7f7f7; color:var(--black-color);" onclick="exportContent()">Export JSON</button>
                 </div>
@@ -494,7 +495,7 @@
                 </div>
 
                 <aside class="project-preview-card" aria-hidden="true">
-                    <img id="projectImagePreview" src="assets/images/icons/placeholder.png" alt="Project preview">
+                    <img id="projectImagePreview" src="assets/images/icons/placeholder.svg" alt="Project preview">
                     <h3 id="projPreviewTitle">Project Title</h3>
                     <div class="muted" id="projPreviewCategory">Category</div>
                     <div style="margin-top:10px;" id="projPreviewDescription">Short description preview will appear here.</div>
@@ -541,7 +542,7 @@
                         <button class="modal-close" onclick="hideServiceForm()" aria-label="Close" style="font-size:16px;">✕</button>
                     </div>
                     <div style="text-align:center; margin-top:4px;">
-                        <img id="modalPreviewIcon" src="assets/images/icons/placeholder.png" alt="Service Icon" style="height:72px;width:72px;object-fit:contain;margin:0 auto;">
+                        <img id="modalPreviewIcon" src="assets/images/icons/placeholder.svg" alt="Service Icon" style="height:72px;width:72px;object-fit:contain;margin:0 auto;">
                         <h3 id="modalPreviewTitle" style="margin-top:10px;">Service Title</h3>
                         <ul id="modalPreviewList" style="text-align:left; margin-top:10px;"></ul>
                         <div style="margin-top:10px;"><a id="modalPreviewLink" href="#">View Portfolio Projects</a></div>

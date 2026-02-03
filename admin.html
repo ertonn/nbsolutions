@@ -238,16 +238,11 @@
                 <h2>Admin Login</h2>
             </div>
             <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="adminEmail" placeholder="admin@example.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
+                <label>Access Password</label>
                 <input type="password" id="adminPassword" placeholder="Enter password">
             </div>
-            <button onclick="supabaseSignIn()" class="cta-button" style="width: 100%; margin-top: 20px;">SIGN IN</button>
-            <p id="loginError" style="color: red; margin-top: 15px; text-align: center; display: none;"></p>
-            <p id="loginHelp" style="color:var(--text-color); margin-top:8px; text-align:center; font-size:13px;">Use your Supabase admin account to sign in.</p>
+            <button onclick="checkPassword()" class="cta-button" style="width: 100%; margin-top: 20px;">LOGIN TO DASHBOARD</button>
+            <p id="loginError" style="color: red; margin-top: 15px; text-align: center; display: none;">Incorrect password. Please try again.</p>
         </div>
     </div>
 
@@ -392,10 +387,7 @@
                 <button class="cta-button" onclick="changePassword()">Save Password</button>
                 <button class="cta-button" style="background:#ddd; color:#111; margin-left:8px;" onclick="migrateLocalData()">Migrate Local Data</button>
             </div>
-            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-                <div id="signedInAs" style="font-size:13px;color:var(--text-color);opacity:0.9;"></div>
-                <button id="supabaseSignOutBtn" class="cta-button" style="background:#ff4d4d; display:none;">Sign Out</button>
-            </div>
+
         </div>
     </section>
 

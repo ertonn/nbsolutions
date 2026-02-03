@@ -131,45 +131,29 @@ function changePassword() {
 // ---------------- Supabase auth & sync ----------------
 function initSupabase() {
     try {
-        // Gather possible client-safe keys from multiple places (window, meta tags)
-        const metaUrl = (document.querySelector('meta[name="supabase-url"]') && document.querySelector('meta[name="supabase-url"]').content) || '';
-        const metaKey = (document.querySelector('meta[name="supabase-anon-key"]') && document.querySelector('meta[name="supabase-anon-key"]').content) || '';
-
-        const w = window || {};
-        const detection = {
-            NEXT_PUBLIC_SUPABASE_URL: w.NEXT_PUBLIC_SUPABASE_URL || null,
-            NEXT_PUBLIC_SUPABASE_ANON_KEY: w.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
-            SUPABASE_URL: w.SUPABASE_URL || null,
-            SUPABASE_ANON_KEY: w.SUPABASE_ANON_KEY || null,
-            SUPABASE_SERVICE_ROLE_KEY: w.SUPABASE_SERVICE_ROLE_KEY || null,
-            META_SUPABASE_URL: metaUrl || null,
-            META_SUPABASE_ANON_KEY: metaKey || null
-        };
-
-        // Diagnostic: show which envs are present (values masked)
-        try {
-            const mask = v => v ? (typeof v === 'string' && v.length > 12 ? v.slice(0,6) + '…' + v.slice(-4) : 'set') : null;
-            const diag = Object.keys(detection).reduce((acc, k) => { acc[k] = mask(detection[k]); return acc; }, {});
-            console.info('Supabase env detection:', diag);
-            console.table(Object.keys(detection).map(k=>({key:k, present: !!detection[k]})));
-        } catch(e){}
-
-        // Prefer explicit NEXT_PUBLIC* then meta tags then generic SUPABASE_* vars
-        const url = w.NEXT_PUBLIC_SUPABASE_URL || metaUrl || w.SUPABASE_URL || '';
-        const key = w.NEXT_PUBLIC_SUPABASE_ANON_KEY || metaKey || w.SUPABASE_ANON_KEY || w.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+        // Hardcoded Supabase config for static site
+        const url = "https://krgiqtrwsievtizezqsg.supabase.co";
+        const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyZ2lxdHJ3c2lldnRpemV6cXNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDMwNzYsImV4cCI6MjA4NTY3OTA3Nn0.XnHkwwkJKshsVYDO9iWxZnnlEXYL9K_oHrnHtZy7EV0";
 
         if (!url || !key) {
-            console.warn('Supabase keys not found — ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set and the site is rebuilt/deployed. Vercel server vars must be NEXT_PUBLIC_* to be available to the client.');
+            console.warn('Supabase keys not found — please provide your Supabase URL and anon key.');
             supabaseClient = null; return;
         }
 
-        supabaseClient = supabaseJs.createClient(url, key);
+        // Make sure to include the Supabase CDN in your HTML:
+        // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        supabaseClient = supabase.createClient(url, key);
         console.info('Supabase initialized for', url);
 
         // listen to auth changes
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session && session.user) onSignedIn(session.user);
-            else { document.getElementById('signedInAs').textContent = ''; document.getElementById('supabaseSignOutBtn').style.display = 'none'; }
+            else {
+                const signedInAs = document.getElementById('signedInAs');
+                if (signedInAs) signedInAs.textContent = '';
+                const signOutBtn = document.getElementById('supabaseSignOutBtn');
+                if (signOutBtn) signOutBtn.style.display = 'none';
+            }
         });
     } catch (e) { console.error('initSupabase error', e); }
 }
@@ -185,7 +169,14 @@ async function checkAuthState() {
 }
 
 async function supabaseSignIn() {
-    if (!supabaseClient) { document.getElementById('loginError').textContent = 'Supabase not configured'; document.getElementById('loginError').style.display = 'block'; return; }
+    if (!supabaseClient) {
+        const loginError = document.getElementById('loginError');
+        if (loginError) {
+            loginError.textContent = 'Supabase not configured';
+            loginError.style.display = 'block';
+        }
+        return;
+    }
     const email = document.getElementById('adminEmail').value.trim();
     const pass = document.getElementById('adminPassword').value;
     try {
@@ -198,7 +189,8 @@ async function supabaseSignIn() {
             document.getElementById('loginError').style.display = 'none';
         }
     } catch (e) {
-        document.getElementById('loginError').textContent = e.message || 'Sign-in failed';
+        const loginError = document.getElementById('loginError');
+        if (loginError) loginError.textContent = e.message || 'Sign-in failed';
         document.getElementById('loginError').style.display = 'block';
     }
 }
@@ -207,7 +199,8 @@ async function supabaseSignOut() {
     if (!supabaseClient) return;
     await supabaseClient.auth.signOut();
     localStorage.removeItem('admin_logged_in');
-    document.getElementById('signedInAs').textContent = '';
+    const signedInAs = document.getElementById('signedInAs');
+    if (signedInAs) signedInAs.textContent = '';
     document.getElementById('supabaseSignOutBtn').style.display = 'none';
     location.reload();
 }
@@ -275,7 +268,8 @@ function toggleProjectForm(isEdit = false) {
         modal.classList.add('active');
         modal.setAttribute('aria-hidden','false');
         if (!isEdit) {
-            document.getElementById('formTitle').textContent = "Add New Project";
+            const formTitle = document.getElementById('formTitle');
+            if (formTitle) formTitle.textContent = "Add New Project";
             actualForm.reset();
             document.getElementById('editId').value = '';
             document.getElementById('projectImagePath').value = '';
@@ -357,7 +351,8 @@ async function renderAdminProjects() {
     });
 
     // update dashboard count
-    document.getElementById('dashboardProjectsCount') && (document.getElementById('dashboardProjectsCount').textContent = projects.length);
+    const dashCount = document.getElementById('dashboardProjectsCount');
+    if (dashCount) dashCount.textContent = projects.length;
 } 
 
 // Convert plain text description to HTML with formatting
@@ -591,7 +586,8 @@ async function editProject(id) {
     }
 
     if (project) {
-        document.getElementById('formTitle').textContent = "Edit Project";
+        const formTitle = document.getElementById('formTitle');
+        if (formTitle) formTitle.textContent = "Edit Project";
         document.getElementById('editId').value = project.id;
         document.getElementById('projectTitle').value = project.title || '';
         document.getElementById('projectCategory').value = project.category || '';
@@ -812,13 +808,18 @@ async function saveContent() {
             const payload = { key: 'site_content', value: d, updated_at: new Date() };
             const { data, error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key', returning: 'representation' });
             if (error) throw error;
-            // If Supabase returned a representation, sync local admin content
-            if (data && data[0] && data[0].value) {
-                window.__adminContent = data[0].value;
+            // After saving, re-fetch latest content from Supabase
+            const { data: freshData, error: fetchError } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
+            if (fetchError) throw fetchError;
+            if (freshData && freshData.value) {
+                window.__adminContent = freshData.value;
             } else {
                 window.__adminContent = d;
             }
-            alert('Content saved to Supabase.');
+            if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
+            updateDashboardCounts();
+            alert('Content saved to Supabase and reloaded.');
+            return;
         } else {
             let res = await fetch('/api/content', {
                 method: 'POST',
@@ -854,7 +855,6 @@ async function saveContent() {
         localStorage.setItem(CONTENT_KEY, JSON.stringify(d));
         alert('Content saved locally (no server API available). Error: ' + (e.message || e));
     }
-
     window.__adminContent = d;
     if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
     updateDashboardCounts();
@@ -942,13 +942,11 @@ async function fetchContentRemote() {
 
 // --- Server-side projects/content helpers (PHP API) ---
 async function fetchProjectsRemote() {
+    if (!supabaseClient) return null;
     try {
-        let res = await fetch('/api/projects');
-        if (!res.ok) {
-            res = await fetch('/api.php?action=projects');
-            if (!res.ok) throw new Error('Server responded ' + res.status);
-        }
-        return await res.json();
+        const { data, error } = await supabaseClient.from('projects').select('*').order('id', { ascending: true });
+        if (error) throw error;
+        return data;
     } catch (e) { console.error('fetchProjectsRemote error', e); return null; }
 }
 
@@ -962,44 +960,37 @@ function readFileAsDataURL(file) {
 }
 
 async function saveProjectRemote(payload, fileBlob) {
+    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
         const body = Object.assign({}, payload);
         if (fileBlob) {
             const dataUrl = await readFileAsDataURL(fileBlob);
-            body.imageBase64 = dataUrl;
+            body.image = dataUrl; // store image as base64 or handle upload separately
             body.imageFilename = fileBlob.name || 'upload.jpg';
         }
-
-        let res = await fetch('/api/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
-            body: JSON.stringify(body)
-        });
-        if (!res.ok) {
-            // try PHP-script fallback
-            res = await fetch('/api.php?action=projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
-                body: JSON.stringify(body)
-            });
+        let result;
+        if (body.id) {
+            // Update existing project
+            const { data, error } = await supabaseClient.from('projects').update(body).eq('id', body.id).select();
+            if (error) throw error;
+            result = data && data[0];
+        } else {
+            // Insert new project (remove id so Postgres can auto-generate)
+            const insertBody = { ...body };
+            delete insertBody.id;
+            const { data, error } = await supabaseClient.from('projects').insert([insertBody]).select();
+            if (error) throw error;
+            result = data && data[0];
         }
-        if (!res.ok) {
-            const txt = await res.text(); throw new Error('Server error ' + res.status + ': ' + txt);
-        }
-        const json = await res.json();
-        // If server returns array (Supabase return), pick first element
-        if (Array.isArray(json) && json.length) return json[0];
-        return json;
+        return result;
     } catch (e) { console.error('saveProjectRemote error', e); throw e; }
 }
 
 async function deleteProjectRemote(id) {
+    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
-        let res = await fetch('/api/projects?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'X-Admin-Pass': ADMIN_PASSWORD } });
-        if (!res.ok) {
-            res = await fetch('/api.php?action=projects&id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'X-Admin-Pass': ADMIN_PASSWORD } });
-        }
-        if (!res.ok) throw new Error('Delete failed ' + res.status);
+        const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+        if (error) throw error;
         return true;
     } catch (e) { console.error('deleteProjectRemote error', e); throw e; }
 }
@@ -1149,8 +1140,10 @@ function updateProjectPreview() {
         }
         const imgEl = document.getElementById('projectImagePreview');
 
-        document.getElementById('projPreviewTitle').textContent = title;
-        document.getElementById('projPreviewCategory').textContent = category;
+        const projTitle = document.getElementById('projPreviewTitle');
+        if (projTitle) projTitle.textContent = title;
+        const projCat = document.getElementById('projPreviewCategory');
+        if (projCat) projCat.textContent = category;
         // if the description contains HTML, use it directly; otherwise format plain text
         if (desc.trim().startsWith('<') || desc.trim().includes('<p') || desc.trim().includes('<ul') || desc.trim().includes('<br')) {
             document.getElementById('projPreviewDescription').innerHTML = desc;

@@ -1,23 +1,48 @@
+
 /* content-loader.js
-   Loads content from /api/content with a fallback to /assets/misc/content.json
+   Loads content from Supabase (site_content table), with fallback to /api/content or /assets/misc/content.json
    Replaces elements that have data-content-key attributes and renders lists from data-content-list templates.
 */
 (async function loadContent(){
-  const sources = ['/api/content', '/assets/misc/content.json'];
+  // --- Supabase config (public anon key only) ---
+  const SUPABASE_URL = "https://krgiqtrwsievtizezqsg.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyZ2lxdHJ3c2lldnRpemV6cXNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDMwNzYsImV4cCI6MjA4NTY3OTA3Nn0.XnHkwwkJKshsVYDO9iWxZnnlEXYL9K_oHrnHtZy7EV0";
   let data = {};
-  for (const src of sources) {
-    try {
-      const res = await fetch(src, { cache: 'no-store' });
-      if (!res.ok) throw new Error('no');
-      data = await res.json();
-      break;
-    } catch (e) {
-      // try next source
+
+  // Try to load from Supabase first
+  let supabaseLoaded = false;
+  try {
+    if (window.supabase) {
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: row, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
+      if (!error && row && row.value) {
+        data = row.value;
+        supabaseLoaded = true;
+        console.log('[content-loader] Loaded content from Supabase:', data);
+      }
     }
+  } catch (e) {
+    // ignore, fallback below
   }
 
-  if (!data || Object.keys(data).length === 0) {
-    console.warn('content-loader: no content found from API or local JSON.');
+  // Fallback to API/JSON if Supabase not loaded
+  if (!supabaseLoaded) {
+    const sources = ['/api/content', '/assets/misc/content.json'];
+    for (const src of sources) {
+      try {
+        const res = await fetch(src, { cache: 'no-store' });
+        if (!res.ok) throw new Error('no');
+        data = await res.json();
+        break;
+      } catch (e) {
+        // try next source
+      }
+    }
+    if (!data || Object.keys(data).length === 0) {
+      console.warn('content-loader: no content found from Supabase, API, or local JSON.');
+    } else {
+      console.log('[content-loader] Loaded content from fallback:', data);
+    }
   }
 
   function applyContent(dataset) {

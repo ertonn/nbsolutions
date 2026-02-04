@@ -1113,6 +1113,7 @@ function renderBrochuresAdmin() {
     document.getElementById('content_brochure1_title').value = d['brochure1.title'] || 'Company Brochure';
     document.getElementById('content_brochure1_description').value = d['brochure1.description'] || '';
     document.getElementById('content_brochure1_pdf_path').value = d['brochure1.pdf_path'] || '';
+    document.getElementById('content_brochure1_image_path').value = d['brochure1.image_path'] || '';
 
     // Show current PDF
     const currentPdf1 = document.getElementById('brochure1_current_pdf');
@@ -1128,6 +1129,7 @@ function renderBrochuresAdmin() {
     document.getElementById('content_brochure2_title').value = d['brochure2.title'] || 'Personal Profile';
     document.getElementById('content_brochure2_description').value = d['brochure2.description'] || '';
     document.getElementById('content_brochure2_pdf_path').value = d['brochure2.pdf_path'] || '';
+    document.getElementById('content_brochure2_image_path').value = d['brochure2.image_path'] || '';
 
     // Show current PDF
     const currentPdf2 = document.getElementById('brochure2_current_pdf');
@@ -1193,8 +1195,10 @@ function createEmbedForVideo(url, height = 210) {
     // Collect fields (only title & description remain editable)
     d['brochure1.title'] = document.getElementById('content_brochure1_title').value;
     d['brochure1.description'] = document.getElementById('content_brochure1_description').value;
+    d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value;
     d['brochure2.title'] = document.getElementById('content_brochure2_title').value;
     d['brochure2.description'] = document.getElementById('content_brochure2_description').value;
+    d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value;
 
     // default bucket (hidden from UI)
     const bucketName = 'site-assets';

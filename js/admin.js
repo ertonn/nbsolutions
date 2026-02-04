@@ -49,11 +49,16 @@ function showSection(sectionId) {
     const el = document.getElementById(sectionId);
     if (el) el.classList.add('active');
 
-    // Only show the main projects area for Projects and Overview sections
+    // Only show the main projects area for Projects section
     const projectsArea = document.getElementById('projectsArea');
     if (projectsArea) {
-        if (sectionId === 'projects-section' || sectionId === 'dashboard-section') {
+        if (sectionId === 'projects-section') {
             projectsArea.style.display = 'block';
+            // Reset filters when switching to projects
+            const search = document.getElementById('projectSearch');
+            const category = document.getElementById('projectFilterCategory');
+            if (search) search.value = '';
+            if (category) category.value = '';
             renderAdminProjects(); // ensure it's up-to-date
         } else {
             projectsArea.style.display = 'none';
@@ -291,19 +296,20 @@ function toggleProjectForm(isEdit = false) {
 } 
 
 async function renderAdminProjects() {
-    // prefer remote projects when available, but keep local sample data if remote is empty
     let projects = getProjects();
     if (supabaseClient) {
         const remote = await fetchProjectsRemote();
-        if (remote && Array.isArray(remote) && remote.length > 0) projects = remote.map(p => ({
-            id: p.id,
-            title: p.title,
-            category: p.category,
-            image: p.image,
-            description: p.description,
-            plainDescription: p.plain_description,
-            video: p.video || p.video_url || ''
-        }));
+        if (remote && Array.isArray(remote) && remote.length > 0) {
+            projects = remote.map(p => ({
+                id: p.id,
+                title: p.title,
+                category: p.category,
+                image: p.image,
+                description: p.description,
+                plainDescription: p.plain_description,
+                video: p.video || p.video_url || ''
+            }));
+        }
     }
 
     const list = document.getElementById('adminProjectList');
@@ -454,9 +460,9 @@ async function saveProject(e) {
     e.preventDefault();
     const id = document.getElementById('editId').value;
 
-    // Warn user when saving locally due to missing server
     if (!supabaseClient) {
-        if (!confirm('No server available: this project will be saved only locally. Continue?')) return;
+        alert('Supabase not configured. Cannot save project.');
+        return;
     }
 
     // Handle image file (if user selected a new file)
@@ -486,44 +492,7 @@ async function saveProject(e) {
     };
 
     try {
-        // Try server API first
-        let saved = null;
-        try {
-            saved = await saveProjectRemote(payload, fileBlob);
-        } catch (e_api) {
-            // If API failed, try Supabase client if available
-            if (supabaseClient) {
-                try {
-                    // upload image to storage when possible
-                    if (fileBlob && supabaseClient && supabaseClient.storage) {
-                        const bucket = 'site-assets';
-                        const filename = Date.now() + '-' + (fileBlob.name || 'upload.jpg');
-                        const { data: up, error: upErr } = await supabaseClient.storage.from(bucket).upload('projects/' + filename, fileBlob, { upsert: true });
-                        if (upErr) throw upErr;
-                        const { data: pub, error: pubErr } = await supabaseClient.storage.from(bucket).getPublicUrl('projects/' + filename);
-                        if (pubErr) throw pubErr;
-                        payload.image = pub && pub.publicUrl ? pub.publicUrl : (pub && pub.data && pub.data.publicUrl ? pub.data.publicUrl : (`assets/uploads/${filename}`));
-                    }
-                    if (payload.id) {
-                        const { data, error } = await supabaseClient.from('projects').update(payload).eq('id', payload.id).select().single();
-                        if (error) throw error;
-                        saved = data;
-                    } else {
-                        const toInsert = Object.assign({}, payload);
-                        delete toInsert.id;
-                        const { data, error } = await supabaseClient.from('projects').insert(toInsert).select().single();
-                        if (error) throw error;
-                        saved = data;
-                    }
-                } catch (e_sup) {
-                    // If supabase also fails, rethrow original API error
-                    throw e_api;
-                }
-            } else {
-                // no server and no supabase: rethrow to trigger local fallback
-                throw e_api;
-            }
-        }
+        let saved = await saveProjectRemote(payload, fileBlob);
 
         if (saved) {
             const projects = getProjects();
@@ -538,28 +507,6 @@ async function saveProject(e) {
             };
             if (idx !== -1) projects[idx] = localObj; else projects.push(localObj);
             saveProjects(projects);
-        } else {
-            // fallback: local storage handling (base64 image)
-            let imagePath = document.getElementById('projectImagePath').value;
-            if (fileBlob) imagePath = await handleImageUpload(imageInput);
-            if (!imagePath) { alert('Please select an image'); return; }
-            const projects = getProjects();
-            const newProject = {
-                id: id ? parseInt(id) : Date.now(),
-                title: payload.title,
-                category: payload.category,
-                image: imagePath,
-                description: formattedDescription,
-                plainDescription: plainDescription,
-                video: payload.video || ''
-            };
-            if (id) {
-                const index = projects.findIndex(p => p.id === parseInt(id));
-                projects[index] = newProject;
-            } else {
-                projects.push(newProject);
-            }
-            saveProjects(projects);
         }
 
         toggleProjectForm();
@@ -572,18 +519,15 @@ async function saveProject(e) {
 }
 
 async function editProject(id) {
+    if (!supabaseClient) {
+        alert('Supabase not configured. Cannot edit project.');
+        return;
+    }
     let project = null;
-    if (supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
-            if (!error) project = data;
-        } catch (e) { console.error('fetch project', e); }
-    }
-
-    if (!project) {
-        const projects = getProjects();
-        project = projects.find(p => p.id === id);
-    }
+    try {
+        const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
+        if (!error) project = data;
+    } catch (e) { console.error('fetch project', e); }
 
     if (project) {
         const formTitle = document.getElementById('formTitle');
@@ -608,27 +552,19 @@ async function editProject(id) {
         toggleProjectForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         updateProjectPreview();
+    } else {
+        alert('Project not found.');
     }
 }
 
 async function deleteProject(id) {
     if (!confirm("Are you sure you want to delete this project?")) return;
+    if (!supabaseClient) {
+        alert('Supabase not configured. Cannot delete project.');
+        return;
+    }
     try {
-        try {
-            // Try server API delete first
-            await deleteProjectRemote(id);
-        } catch (e_api) {
-            // If API failed and Supabase client exists, try Supabase delete
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('projects').delete().eq('id', id);
-                    if (error) throw error;
-                } catch (e_sup) { throw e_api; }
-            } else {
-                // No server - confirm local deletion
-                if (!confirm('No server available: deletion will be local only. Continue?')) return;
-            }
-        }
+        await deleteProjectRemote(id);
 
         let projects = getProjects();
         projects = projects.filter(p => p.id !== id);
@@ -642,37 +578,23 @@ const CONTENT_KEY = 'nb_content_data';
 
 async function loadContentData() {
     try {
-        let res = await fetch('assets/misc/content.json', {cache: 'no-store'});
-        let data = await res.json();
-        window.__adminContent = data;
-        // if previously saved locally, merge
-        const local = localStorage.getItem(CONTENT_KEY);
-        if (local) {
-            try { const parsed = JSON.parse(local); window.__adminContent = Object.assign({}, data, parsed); } catch(e){}
+        const remote = await fetchContentRemote();
+        if (remote) {
+            window.__adminContent = remote;
+        } else {
+            window.__adminContent = {};
         }
         // initial render
         renderContentManager();
         if (window.__contentLoader && window.__adminContent) window.__contentLoader.update(window.__adminContent);
     } catch (e) {
-        console.error('Could not load content.json', e);
-        // fallback to localStorage
-        const local = localStorage.getItem(CONTENT_KEY);
-        if (local) {
-            window.__adminContent = JSON.parse(local);
-            renderContentManager();
-            if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
-        }
+        console.error('Could not load content from Supabase', e);
+        window.__adminContent = {};
+        renderContentManager();
     }
 }
 
 async function renderContentManager() {
-    // ensure admin content is populated from local JSON when not present remotely
-    if (!window.__adminContent || Object.keys(window.__adminContent).length === 0) {
-        try {
-            const res = await fetch('/assets/misc/content.json', {cache: 'no-store'});
-            if (res.ok) window.__adminContent = await res.json();
-        } catch(e) { /* ignore */ }
-    }
     const d = window.__adminContent || {};
     document.getElementById('content_projects_section_title').value = d['projects.section.title'] || '';
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
@@ -691,21 +613,21 @@ async function renderContentManager() {
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
     document.getElementById('content_contact_features').value = (d['contact.features'] || []).join('\n');
 
-    // if supabase present and signed in, try to pull content from remote (site_content)
+    // if supabase present, try to pull content from remote (site_content)
     try {
         if (supabaseClient) {
             const remote = await fetchContentRemote();
             if (remote) {
-                window.__adminContent = Object.assign({}, remote, window.__adminContent || {});
+                window.__adminContent = remote;
                 // re-populate with remote content
-                document.getElementById('content_projects_section_title').value = window.__adminContent['projects.section.title'] || document.getElementById('content_projects_section_title').value;
-                document.getElementById('content_homepage_hero_title').value = window.__adminContent['homepage.hero.title'] || document.getElementById('content_homepage_hero_title').value;
-                document.getElementById('content_homepage_hero_desc').value = window.__adminContent['homepage.hero.desc'] || document.getElementById('content_homepage_hero_desc').value;
-                document.getElementById('content_homepage_about_title').value = window.__adminContent['homepage.about.title'] || document.getElementById('content_homepage_about_title').value;
-                document.getElementById('content_homepage_about_desc').innerHTML = window.__adminContent['homepage.about.desc'] || document.getElementById('content_homepage_about_desc').innerHTML;
-                document.getElementById('content_services_hero_title').value = window.__adminContent['services.hero.title'] || document.getElementById('content_services_hero_title').value;
-                document.getElementById('content_services_hero_desc').value = window.__adminContent['services.hero.desc'] || document.getElementById('content_services_hero_desc').value;
-                document.getElementById('content_contact_features').value = (window.__adminContent['contact.features'] || []).join('\n') || document.getElementById('content_contact_features').value;
+                document.getElementById('content_projects_section_title').value = window.__adminContent['projects.section.title'] || '';
+                document.getElementById('content_homepage_hero_title').value = window.__adminContent['homepage.hero.title'] || '';
+                document.getElementById('content_homepage_hero_desc').value = window.__adminContent['homepage.hero.desc'] || '';
+                document.getElementById('content_homepage_about_title').value = window.__adminContent['homepage.about.title'] || '';
+                document.getElementById('content_homepage_about_desc').innerHTML = window.__adminContent['homepage.about.desc'] || '';
+                document.getElementById('content_services_hero_title').value = window.__adminContent['services.hero.title'] || '';
+                document.getElementById('content_services_hero_desc').value = window.__adminContent['services.hero.desc'] || '';
+                document.getElementById('content_contact_features').value = (window.__adminContent['contact.features'] || []).join('\n');
             }
         }
     } catch(e){ console.error('renderContentManager remote fetch error', e); }
@@ -801,7 +723,15 @@ async function saveContent() {
     d['contact.section.title'] = document.getElementById('content_contact_section_title').value;
     d['contact.features'] = document.getElementById('content_contact_features').value.split('\n').map(l=>l.trim()).filter(Boolean);
 
-    // try to POST to API if available
+    // brochures
+    d['brochure1.title'] = document.getElementById('content_brochure1_title').value;
+    d['brochure1.description'] = document.getElementById('content_brochure1_description').value;
+    d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value;
+    d['brochure2.title'] = document.getElementById('content_brochure2_title').value;
+    d['brochure2.description'] = document.getElementById('content_brochure2_description').value;
+    d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;
+
+    // try to save to Supabase
     try {
         if (supabaseClient) {
             // save into site_content table under key 'site_content'
@@ -819,94 +749,20 @@ async function saveContent() {
             if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
             updateDashboardCounts();
             alert('Content saved to Supabase and reloaded.');
+            renderContentManager();
             return;
         } else {
-            let res = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
-                body: JSON.stringify(d)
-            });
-            if (!res.ok) {
-                res = await fetch('/api.php?action=content', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD },
-                    body: JSON.stringify(d)
-                });
-            }
-            if (res.ok) {
-                try {
-                    const serverJson = await res.json();
-                    if (serverJson && Object.keys(serverJson).length) {
-                        window.__adminContent = serverJson;
-                        // keep local variable in-sync
-                        for (const k in serverJson) d[k] = serverJson[k];
-                    }
-                } catch (e) { /* ignore parse */ }
-                alert('Content saved to server.');
-            } else {
-                let txt = '';
-                try { txt = await res.text(); } catch(e) { /* ignore */ }
-                throw new Error('Server responded ' + res.status + (txt ? ': ' + txt : ''));
-            }
+            throw new Error('Supabase not configured');
         }
     } catch (e) {
-        // fallback: save locally, and show error detail so user can diagnose
         console.error('saveContent error', e);
-        localStorage.setItem(CONTENT_KEY, JSON.stringify(d));
-        alert('Content saved locally (no server API available). Error: ' + (e.message || e));
+        alert('Error saving content: ' + (e.message || e));
     }
-    window.__adminContent = d;
-    if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
-    updateDashboardCounts();
 }
 
-// Wrapper that confirms local fallback when server is not available
+// Wrapper for saving content
 async function saveContentWithConfirm() {
-    if (supabaseClient) {
-        await saveContent();
-        return;
-    }
-    // Server not configured — warn user that save will be local
-    if (!confirm('No server available: your changes will be saved locally and not persisted remotely. Continue?')) return;
     await saveContent();
-}
-
-// Test server endpoint for saving content (used by Settings UI)
-async function testServerSave() {
-    try {
-        const d = window.__adminContent || {};
-        let res = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD }, body: JSON.stringify(d) });
-        if (!res.ok) {
-            res = await fetch('/api.php?action=content', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': ADMIN_PASSWORD }, body: JSON.stringify(d) });
-        }
-        const text = await res.text();
-        const statusEl = document.getElementById('serverSaveStatus');
-        if (res.ok) {
-            if (statusEl) statusEl.innerHTML = 'Server: <strong>OK</strong>';
-            alert('Server save OK.');
-        } else {
-            if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">Error</strong>';
-            alert('Server save failed: ' + res.status + '\n' + text);
-        }
-    } catch (e) {
-        const statusEl = document.getElementById('serverSaveStatus');
-        if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No response</strong>';
-        alert('Server request failed: ' + (e.message || e));
-    }
-}
-
-async function pingServer() {
-    const statusEl = document.getElementById('serverSaveStatus');
-    try {
-        const res = await fetch('/api/ping', { headers: { 'X-Admin-Pass': localStorage.getItem('nb_admin_pass') || '' } });
-        if (res && res.ok) { if (statusEl) statusEl.innerHTML = 'Server: <strong>OK</strong>'; }
-        else { if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No auth</strong>'; }
-    } catch (e) { if (statusEl) statusEl.innerHTML = 'Server: <strong style="color:#a00">No response</strong>'; }
-}
-
-// Ping server on admin open
-if (typeof window !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', function(){ pingServer(); });
 }
 
 function exportContent() {
@@ -920,7 +776,6 @@ function exportContent() {
 
 // fetch content object from Supabase site_content table
 async function fetchContentRemote() {
-    // Prefer direct Supabase client when available, otherwise try server-side API
     if (supabaseClient) {
         try {
             const { data, error } = await supabaseClient.from('site_content').select('value').eq('key','site_content').single();
@@ -928,19 +783,10 @@ async function fetchContentRemote() {
             return data ? data.value : null;
         } catch(e){ console.error('fetchContentRemote error', e); return null; }
     }
-
-    // Server API fallback: try friendly REST path, then fallback to PHP script variant for built-in PHP server
-    try {
-        let res = await fetch('/api/content');
-        if (!res.ok) {
-            res = await fetch('/api.php?action=content');
-            if (!res.ok) throw new Error('Server responded ' + res.status);
-        }
-        return await res.json();
-    } catch (e) { console.error('fetchContentRemote server error', e); return null; }
+    return null;
 }
 
-// --- Server-side projects/content helpers (PHP API) ---
+// --- Supabase helpers ---
 async function fetchProjectsRemote() {
     if (!supabaseClient) return null;
     try {
@@ -1353,18 +1199,6 @@ function createEmbedForVideo(url, height = 210) {
     // default bucket (hidden from UI)
     const bucketName = 'site-assets';
 
-    let user = null;
-    if (supabaseClient && supabaseClient.auth) {
-        try { const s = await supabaseClient.auth.getSession(); user = s && s.data && s.data.session ? s.data.session.user : null; } catch (e) { user = null; }
-    }
-
-    if (!user) {
-        if (!confirm('You are not signed in to Supabase. File uploads will not be possible. Continue and save content locally only?')) {
-            setStatus('Upload cancelled. Sign in to Supabase to enable uploads.');
-            return;
-        }
-    }
-
     try {
         setStatus('Preparing uploads...', true);
 
@@ -1372,21 +1206,14 @@ function createEmbedForVideo(url, height = 210) {
         const pdf1Input = document.getElementById('brochure1_pdf');
         if (pdf1Input && pdf1Input.files && pdf1Input.files[0]) {
             const file = pdf1Input.files[0];
-            if (supabaseClient && user) {
+            if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
                 const url = await uploadFileToBucket(file, bucketName, 'brochures');
                 if (url) d['brochure1.pdf_path'] = url;
                 else { d['brochure1.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
             } else {
-                // try server API upload via base64 payload
-                try {
-                    const dataUrl = await readFileAsDataURL(file);
-                    d['brochure1_file'] = dataUrl;
-                    d['brochure1_file_name'] = file.name;
-                } catch (e) {
-                    d['brochure1.pdf_path'] = `assets/${file.name}`;
-                    alert(`Not signed in and upload failed: please manually copy the PDF to assets/${file.name}`);
-                }
+                alert('Supabase not configured. Cannot upload PDF.');
+                return;
             }
         } else {
             d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value;
@@ -1397,21 +1224,14 @@ function createEmbedForVideo(url, height = 210) {
         const pdf2Input = document.getElementById('brochure2_pdf');
         if (pdf2Input && pdf2Input.files && pdf2Input.files[0]) {
             const file = pdf2Input.files[0];
-            if (supabaseClient && user) {
+            if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
                 const url = await uploadFileToBucket(file, bucketName, 'brochures');
                 if (url) d['brochure2.pdf_path'] = url;
                 else { d['brochure2.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
             } else {
-                // try server API upload via base64 payload
-                try {
-                    const dataUrl = await readFileAsDataURL(file);
-                    d['brochure2_file'] = dataUrl;
-                    d['brochure2_file_name'] = file.name;
-                } catch (e) {
-                    d['brochure2.pdf_path'] = `assets/${file.name}`;
-                    alert(`Not signed in and upload failed: please manually copy the PDF to assets/${file.name}`);
-                }
+                alert('Supabase not configured. Cannot upload PDF.');
+                return;
             }
         } else {
             d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;
@@ -1431,6 +1251,28 @@ function createEmbedForVideo(url, height = 210) {
         alert('Error saving brochures: ' + (e.message || e));
     } finally {
         if (saveBtn) saveBtn.disabled = false;
+    }
+}
+
+async function signInToSupabase() {
+    if (!supabaseClient) {
+        alert('Supabase not configured. Set the meta tags for supabase-url and supabase-anon-key.');
+        return;
+    }
+    const email = document.getElementById('supabase_email').value;
+    const password = document.getElementById('supabase_password').value;
+    if (!email || !password) {
+        alert('Enter email and password.');
+        return;
+    }
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        alert('Signed in to Supabase successfully.');
+        // Re-check auth state
+        checkAuthState();
+    } catch (e) {
+        alert('Sign in failed: ' + (e.message || e));
     }
 }
 

@@ -39,7 +39,18 @@
       }
     }
     if (!data || Object.keys(data).length === 0) {
-      console.warn('content-loader: no content found from Supabase, API, or local JSON.');
+      // Check localStorage as last resort (for local development)
+      const local = localStorage.getItem('nb_content_data');
+      if (local) {
+        try {
+          data = JSON.parse(local);
+          console.log('[content-loader] Loaded content from localStorage:', data);
+        } catch (e) {
+          console.warn('content-loader: failed to parse localStorage data');
+        }
+      } else {
+        console.warn('content-loader: no content found from Supabase, API, local JSON, or localStorage.');
+      }
     } else {
       console.log('[content-loader] Loaded content from fallback:', data);
     }

@@ -54,6 +54,35 @@
         else el.textContent = dataset[key];
       }
     });
+
+    // Set href attributes for elements that expect URLs — only allow absolute HTTP(S) links (Supabase public URLs), not local asset paths
+    document.querySelectorAll('[data-content-href]').forEach(el => {
+      const key = el.dataset.contentHref;
+      if (!key) return;
+      const val = dataset && dataset[key];
+      // Only accept full http(s) URLs — this ensures buttons only work when files are hosted remotely (e.g., Supabase)
+      if (val && /^https?:\/\//i.test(val)) {
+        el.href = val;
+        el.style.display = '';
+        const downloadKey = el.dataset.contentDownload;
+        if (downloadKey && dataset && dataset[downloadKey]) el.setAttribute('download', dataset[downloadKey]);
+      } else {
+        // Hide if no remote URL is available (no local fallbacks allowed for brochure download button per requirement)
+        el.removeAttribute('href');
+        el.style.display = 'none';
+      }
+    });
+
+    document.querySelectorAll('[data-content-src]').forEach(el => {
+      const key = el.dataset.contentSrc;
+      if (!key) return;
+      let val = dataset && dataset[key];
+      if (!val) {
+        const alt = key.replace(/\.image_path$/, '_file');
+        if (dataset && dataset[alt]) val = dataset[alt];
+      }
+      if (val) { el.src = val; el.style.display = ''; } else { el.style.display = 'none'; }
+    });
   }
 
   function applyLists(dataset) {

@@ -267,6 +267,7 @@ function toggleProjectForm(isEdit = false) {
         modal.setAttribute('aria-hidden','true');
         actualForm.reset();
         document.getElementById('editId').value = '';
+        document.getElementById('editSource').value = '';
         document.getElementById('projectImagePath').value = '';
         if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
     } else {
@@ -296,20 +297,15 @@ function toggleProjectForm(isEdit = false) {
 } 
 
 async function renderAdminProjects() {
-    let projects = getProjects();
+    let projects = [];
     if (supabaseClient) {
         const remote = await fetchProjectsRemote();
-        if (remote && Array.isArray(remote) && remote.length > 0) {
-            projects = remote.map(p => ({
-                id: p.id,
-                title: p.title,
-                category: p.category,
-                image: p.image,
-                description: p.description,
-                plainDescription: p.plain_description,
-                video: p.video || p.video_url || ''
-            }));
-        }
+        const content = await fetchContentRemote();
+        const contentProjects = content && content.projects ? content.projects.map(p => ({...p, source: 'content'})) : [];
+        const tableProjects = remote && Array.isArray(remote) ? remote.map(p => ({...p, source: 'table'})) : [];
+        projects = [...contentProjects, ...tableProjects];
+    } else {
+        projects = getProjects();
     }
 
     const list = document.getElementById('adminProjectList');
@@ -349,8 +345,8 @@ async function renderAdminProjects() {
                 </div>
             </div>
             <div class="admin-actions">
-                <button onclick="editProject(${project.id})" class="cta-button btn-edit">EDIT</button>
-                <button onclick="deleteProject(${project.id})" class="cta-button btn-delete">DELETE</button>
+                <button onclick="editProject(${project.id}, '${project.source}')" class="cta-button btn-edit">EDIT</button>
+                <button onclick="deleteProject(${project.id}, '${project.source}')" class="cta-button btn-delete">DELETE</button>
             </div>
         `;
         list.appendChild(item);
@@ -459,6 +455,7 @@ async function handleImageUpload(fileInput) {
 async function saveProject(e) {
     e.preventDefault();
     const id = document.getElementById('editId').value;
+    const source = document.getElementById('editSource').value || 'table';
 
     if (!supabaseClient) {
         alert('Supabase not configured. Cannot save project.');
@@ -492,7 +489,28 @@ async function saveProject(e) {
     };
 
     try {
-        let saved = await saveProjectRemote(payload, fileBlob);
+        let saved;
+        if (source === 'table') {
+            saved = await saveProjectRemote(payload, fileBlob);
+        } else if (source === 'content') {
+            // save to site_content
+            const content = await fetchContentRemote() || {};
+            if (!content.projects) content.projects = [];
+            const idx = content.projects.findIndex(p => p.id == id);
+            if (idx !== -1) {
+                content.projects[idx] = { ...content.projects[idx], ...payload };
+            } else {
+                // new, assign id
+                payload.id = Date.now(); // simple id
+                content.projects.push(payload);
+            }
+            // save back
+            const savePayload = { key: 'site_content', value: content, updated_at: new Date() };
+            const { error } = await supabaseClient.from('site_content').upsert(savePayload, { onConflict: 'key' });
+            if (error) throw error;
+            window.__adminContent = content;
+            saved = payload;
+        }
 
         if (saved) {
             const projects = getProjects();
@@ -518,21 +536,29 @@ async function saveProject(e) {
     }
 }
 
-async function editProject(id) {
+async function editProject(id, source = 'table') {
     if (!supabaseClient) {
         alert('Supabase not configured. Cannot edit project.');
         return;
     }
     let project = null;
     try {
-        const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
-        if (!error) project = data;
+        if (source === 'table') {
+            const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
+            if (!error) project = data;
+        } else if (source === 'content') {
+            const content = await fetchContentRemote();
+            if (content && content.projects) {
+                project = content.projects.find(p => p.id == id);
+            }
+        }
     } catch (e) { console.error('fetch project', e); }
 
     if (project) {
         const formTitle = document.getElementById('formTitle');
         if (formTitle) formTitle.textContent = "Edit Project";
         document.getElementById('editId').value = project.id;
+        document.getElementById('editSource').value = source;
         document.getElementById('projectTitle').value = project.title || '';
         document.getElementById('projectCategory').value = project.category || '';
         document.getElementById('projectImagePath').value = project.image || ''; // Store current image path
@@ -557,14 +583,27 @@ async function editProject(id) {
     }
 }
 
-async function deleteProject(id) {
+async function deleteProject(id, source = 'table') {
     if (!confirm("Are you sure you want to delete this project?")) return;
     if (!supabaseClient) {
         alert('Supabase not configured. Cannot delete project.');
         return;
     }
     try {
-        await deleteProjectRemote(id);
+        if (source === 'table') {
+            await deleteProjectRemote(id);
+        } else if (source === 'content') {
+            // delete from site_content
+            const content = await fetchContentRemote();
+            if (content && content.projects) {
+                content.projects = content.projects.filter(p => p.id != id);
+                // save back
+                const payload = { key: 'site_content', value: content, updated_at: new Date() };
+                const { error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key' });
+                if (error) throw error;
+                window.__adminContent = content;
+            }
+        }
 
         let projects = getProjects();
         projects = projects.filter(p => p.id !== id);

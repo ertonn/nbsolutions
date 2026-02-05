@@ -170,6 +170,9 @@
   applyContent(data);
   applyLists(data);
 
+  // expose data globally for other scripts
+  window.__siteContent = data;
+
   // expose a helper to allow hot updates (e.g., from admin page)
   window.__contentLoader = {
     update: (newData) => {
@@ -177,6 +180,7 @@
       data = Object.assign({}, data, newData);
       applyContent(data);
       applyLists(data);
+      window.__siteContent = data; // update global
     },
     getAll: () => Object.assign({}, data)
   };

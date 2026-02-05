@@ -26,22 +26,29 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) { return '';}
     }
 
-    // Load projects from Storage or JSON
-    const localData = localStorage.getItem(STORAGE_KEY);
-    if (localData) {
-        const data = JSON.parse(localData);
-        renderProjects(data);
-        setupAdminLink(data);
-    } else {
-        fetch('js/projects-data.json')
-            .then(response => response.json())
-            .then(data => {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // Supabase config
+    const SUPABASE_URL = "https://krgiqtrwsievtizezqsg.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyZ2lxdHJ3c2lldnRpemV6cXNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDMwNzYsImV4cCI6MjA4NTY3OTA3Nn0.XnHkwwkJKshsVYDO9iWxZnnlEXYL9K_oHrnHtZy7EV0";
+
+    // Create Supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Load projects from Supabase
+    async function loadProjects() {
+        try {
+            const { data, error } = await supabase.from('projects').select('*').order('id', { ascending: true });
+            if (!error && data) {
                 renderProjects(data);
                 setupAdminLink(data);
-            })
-            .catch(error => console.error('Error loading projects:', error));
+            } else {
+                console.error('Error fetching projects:', error);
+            }
+        } catch (e) {
+            console.error('Failed to load projects:', e);
+        }
     }
+
+    loadProjects();
 
     // Helper to get image source (checks localStorage for base64, otherwise uses path)
     function getImageSrc(imagePath) {

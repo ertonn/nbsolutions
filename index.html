@@ -205,13 +205,13 @@
                     </p>
 
                     <p class="brochure-cta-label" data-content-key="brochure1.cta_label">Download now...</p>
-                    <a href="" id="brochure1-link" target="_blank" class="cta-button brochure-btn">
+                    <a href="" id="brochure1-link" target="_blank" class="cta-button brochure-btn" data-content-href="brochure1.pdf_path">
                         <span class="icon">📄</span> <span data-content-key="brochure1.button_text">Get Our Brochure</span>
                     </a>
                 </div>
                 <div class="brochure-image-wrapper">
                     <div class="illustration-placeholder">
-                        <img id="brochure1-image" src="assets/misc/brochure.jpeg" alt="Brochure Illustration">
+                        <img id="brochure1-image" src="assets/misc/brochure.jpeg" alt="Brochure Illustration" data-content-src="brochure1.image_path">
                     </div>
                 </div>
             </div>
@@ -233,7 +233,7 @@
                     </p>
 
                     <p class="brochure-cta-label" data-content-key="brochure2.cta_label">Download now...</p>
-                    <a href="" id="brochure2-link" target="_blank" class="cta-button brochure-btn">
+                    <a href="" id="brochure2-link" target="_blank" class="cta-button brochure-btn" data-content-href="brochure2.pdf_path">
                         <span class="icon">📄</span> <span data-content-key="brochure2.button_text">Get Our Brochure</span>
                     </a>
                 </div>
@@ -363,35 +363,7 @@
     <script src="js/mobile-menu.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/content-loader.js"></script>
-    <script>
-        // Update brochure links and images after content loads
-        (async function updateBrochures() {
-            // Wait for content-loader to complete
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const contentData = window.__contentLoader ? window.__contentLoader.getAll() : {};
-            
-            // Update Brochure 1 (Company Brochure)
-            if (contentData['brochure1.pdf_path']) {
-                const link1 = document.getElementById('brochure1-link');
-                if (link1) link1.href = contentData['brochure1.pdf_path'];
-            }
-            if (contentData['brochure1.image_path']) {
-                const img1 = document.getElementById('brochure1-image');
-                if (img1) img1.src = contentData['brochure1.image_path'];
-            }
-            
-            // Update Brochure 2 (Personal Profile)
-            if (contentData['brochure2.pdf_path']) {
-                const link2 = document.getElementById('brochure2-link');
-                if (link2) link2.href = contentData['brochure2.pdf_path'];
-            }
-            if (contentData['brochure2.image_path']) {
-                const img2 = document.getElementById('brochure2-image');
-                if (img2) img2.src = contentData['brochure2.image_path'];
-            }
-        })();
-    </script>
+
 </body>
 
 </html>

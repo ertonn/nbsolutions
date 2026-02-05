@@ -297,15 +297,16 @@ function toggleProjectForm(isEdit = false) {
 } 
 
 async function renderAdminProjects() {
-    let projects = [];
+    let projects = getProjects(); // Start with localStorage as fallback
     if (supabaseClient) {
         const remote = await fetchProjectsRemote();
         const content = await fetchContentRemote();
         const contentProjects = content && content.projects ? content.projects.map(p => ({...p, source: 'content'})) : [];
         const tableProjects = remote && Array.isArray(remote) ? remote.map(p => ({...p, source: 'table'})) : [];
-        projects = [...contentProjects, ...tableProjects];
-    } else {
-        projects = getProjects();
+        if (tableProjects.length > 0 || contentProjects.length > 0) {
+            projects = [...contentProjects, ...tableProjects];
+        }
+        // Else keep localStorage data
     }
 
     const list = document.getElementById('adminProjectList');
@@ -345,8 +346,8 @@ async function renderAdminProjects() {
                 </div>
             </div>
             <div class="admin-actions">
-                <button onclick="editProject(${project.id}, '${project.source}')" class="cta-button btn-edit">EDIT</button>
-                <button onclick="deleteProject(${project.id}, '${project.source}')" class="cta-button btn-delete">DELETE</button>
+                <button onclick="editProject(${project.id}, '${project.source || 'table'}')" class="cta-button btn-edit">EDIT</button>
+                <button onclick="deleteProject(${project.id}, '${project.source || 'table'}')" class="cta-button btn-delete">DELETE</button>
             </div>
         `;
         list.appendChild(item);

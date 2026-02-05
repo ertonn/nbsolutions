@@ -86,9 +86,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card-image-wrapper">
                         <img src="${getImageSrc(project.image)}" alt="${project.title}" loading="lazy">
                     </div>
-                    ${project.video ? `<div class="card-video">${createEmbedForVideo(project.video, 150)}</div>` : ''}
                     <div class="card-content">
                         <h3 class="card-title">${project.title}</h3>
+                        ${project.video ? `<div class="card-video">${createEmbedForVideo(project.video, 150)}</div>` : ''}
                         <a href="javascript:void(0)" class="project-link" onclick="openProjectModal(${project.id})">View in Portfolio</a>
                     </div>
                 `;

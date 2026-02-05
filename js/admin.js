@@ -252,7 +252,11 @@ function getProjects() {
 }
 
 function saveProjects(projects) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    } catch (e) {
+        console.warn('localStorage quota exceeded, skipping local save:', e);
+    }
 }
 
 function toggleProjectForm(isEdit = false) {
@@ -438,7 +442,7 @@ async function handleImageUpload(fileInput) {
         const reader = new FileReader();
         reader.onload = function (e) {
             // Store the image data URL temporarily
-            localStorage.setItem(`img_${filename}`, e.target.result);
+            // localStorage.setItem(`img_${filename}`, e.target.result); // Removed to avoid quota issues
             resolve(relativePath);
         };
         reader.onerror = reject;

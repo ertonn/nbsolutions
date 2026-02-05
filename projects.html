@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="css/media-queries.css">
     <style>
         .card-video { margin: 10px 0; }
-        .video-embed iframe, .video-embed video { width: 100%; height: 150px; }
+        /* Maintain 16:9 aspect ratio responsively */
+        .video-embed { position: relative; width: 100%; padding-top: 56.25%; /* 16:9 */ }
+        .video-embed iframe, .video-embed video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        /* Make modal video take full modal width while preserving aspect */
+        #projectModal .video-embed { max-width: 100%; }
     </style>
 </head>
 

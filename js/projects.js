@@ -1,6 +1,31 @@
 document.addEventListener('DOMContentLoaded', function () {
     const STORAGE_KEY = "nb_projects_data";
 
+    // Helper to create embed HTML for video links (supports YouTube and direct mp4 links)
+    function createEmbedForVideo(url, height = 210) {
+        if (!url) return '';
+        const u = url.trim();
+        // YouTube long URL
+        try {
+            const ytMatch = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+            if (ytMatch && ytMatch[1]) {
+                const id = ytMatch[1];
+                return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            }
+            // direct mp4
+            if (u.match(/\.mp4(\?|$)/i)) {
+                return `<div class="video-embed" style="width:100%;"><video controls style="width:100%; max-height:${height}px;"> <source src="${u}" type="video/mp4">Your browser does not support the video tag.</video></div>`;
+            }
+            // Vimeo quick support
+            const vimeo = u.match(/vimeo\.com\/(\d+)/);
+            if (vimeo && vimeo[1]) {
+                return `<div class="video-embed" style="width:100%;"><iframe width="100%" height="${height}" src="https://player.vimeo.com/video/${vimeo[1]}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+            }
+            // fallback: link
+            return `<div class="video-embed"><a href="${u}" target="_blank">Open video</a></div>`;
+        } catch (e) { return '';}
+    }
+
     // Load projects from Storage or JSON
     const localData = localStorage.getItem(STORAGE_KEY);
     if (localData) {
@@ -61,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card-image-wrapper">
                         <img src="${getImageSrc(project.image)}" alt="${project.title}" loading="lazy">
                     </div>
+                    ${project.video ? `<div class="card-video">${createEmbedForVideo(project.video, 150)}</div>` : ''}
                     <div class="card-content">
                         <h3 class="card-title">${project.title}</h3>
                         <a href="javascript:void(0)" class="project-link" onclick="openProjectModal(${project.id})">View in Portfolio</a>

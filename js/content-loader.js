@@ -66,19 +66,21 @@
       }
     });
 
-    // Set href attributes for elements that expect URLs — only allow absolute HTTP(S) links (Supabase public URLs), not local asset paths
+    // Set href attributes for elements that expect URLs — allow absolute HTTP(S) links and site-local asset paths (e.g., /assets/... or assets/...)
     document.querySelectorAll('[data-content-href]').forEach(el => {
       const key = el.dataset.contentHref;
       if (!key) return;
       const val = dataset && dataset[key];
-      // Only accept full http(s) URLs — this ensures buttons only work when files are hosted remotely (e.g., Supabase)
-      if (val && /^https?:\/\//i.test(val)) {
+      const isRemote = val && /^https?:\/\//i.test(val);
+      const isRelative = val && (/^\//.test(val) || /^assets\//i.test(val) || /^[^:]+\/.*/.test(val));
+      // Accept either a remote https URL or a relative/site-local path so downloads work from assets during dev/deploy
+      if (isRemote || isRelative) {
         el.href = val;
         el.style.display = '';
         const downloadKey = el.dataset.contentDownload;
         if (downloadKey && dataset && dataset[downloadKey]) el.setAttribute('download', dataset[downloadKey]);
       } else {
-        // Hide if no remote URL is available (no local fallbacks allowed for brochure download button per requirement)
+        // Hide if no usable URL is available
         el.removeAttribute('href');
         el.style.display = 'none';
       }

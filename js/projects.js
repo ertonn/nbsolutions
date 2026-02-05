@@ -34,17 +34,34 @@ document.addEventListener('DOMContentLoaded', function () {
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Load projects from Supabase
+    let projectsData = [];
     async function loadProjects() {
         try {
             const { data, error } = await supabase.from('projects').select('*').order('id', { ascending: true });
             if (!error && data) {
+                projectsData = data;
                 renderProjects(data);
                 setupAdminLink(data);
+                // Cache for resilience (non-critical)
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
             } else {
                 console.error('Error fetching projects:', error);
+                // Fallback to localStorage if available
+                const localData = localStorage.getItem(STORAGE_KEY);
+                if (localData) {
+                    projectsData = JSON.parse(localData);
+                    renderProjects(projectsData);
+                    setupAdminLink(projectsData);
+                }
             }
         } catch (e) {
             console.error('Failed to load projects:', e);
+            const localData = localStorage.getItem(STORAGE_KEY);
+            if (localData) {
+                projectsData = JSON.parse(localData);
+                renderProjects(projectsData);
+                setupAdminLink(projectsData);
+            }
         }
     }
 
@@ -109,9 +126,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Modal Logic
-    window.openProjectModal = function (projectId) {
-        const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        const project = projects.find(p => p.id === projectId);
+    window.openProjectModal = async function (projectId) {
+        // Try in-memory data first
+        let project = (typeof projectsData !== 'undefined') ? projectsData.find(p => p.id === projectId) : undefined;
+
+        // If not found, try fetching single project from Supabase
+        if (!project && window.supabase) {
+            try {
+                const { data, error } = await supabase.from('projects').select('*').eq('id', projectId).limit(1).single();
+                if (!error && data) project = data;
+            } catch (e) { console.error('Error fetching project by id:', e); }
+        }
+
+        // Final fallback to localStorage
+        if (!project) {
+            const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+            project = projects.find(p => p.id === projectId);
+        }
+
         if (project) {
             const modal = document.getElementById('projectModal');
 
@@ -122,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.getElementById('modalImage').src = getImageSrc(project.image);
 
-            // show video if present
+            // show video if present (placed under title)
             const videoContainer = document.getElementById('modalVideo');
             if (videoContainer) {
                 if (project.video) {

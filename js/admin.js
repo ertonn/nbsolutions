@@ -216,18 +216,16 @@ async function onSignedIn(user) {
     if (el) el.textContent = 'Signed in as ' + email;
     const outBtn = document.getElementById('supabaseSignOutBtn'); if (outBtn) outBtn.style.display = 'inline-block';
 
-    // fetch remote content and projects and sync
+    // fetch remote content
     try {
         const remoteContent = await fetchContentRemote();
         if (remoteContent) { window.__adminContent = Object.assign({}, remoteContent, window.__adminContent || {}); renderContentManager(); if (window.__contentLoader) window.__contentLoader.update(window.__adminContent); }
-        const remoteProjects = await fetchProjectsRemote();
-        if (remoteProjects && Array.isArray(remoteProjects)) { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteProjects)); }
         renderAdminProjects(); renderServicesAdmin(); updateDashboardCounts();
     } catch (e) { console.error('onSignedIn sync error', e); }
 }
 
 function updateDashboardCounts() {
-    const projects = getProjects();
+    const projects = (window.__adminContent && window.__adminContent.projects) || [];
     const services = (window.__adminContent && window.__adminContent['services.cards']) || [];
     const pc = document.getElementById('dashboardProjectsCount');
     const sc = document.getElementById('dashboardServicesCount');
@@ -267,7 +265,6 @@ function toggleProjectForm(isEdit = false) {
         modal.setAttribute('aria-hidden','true');
         actualForm.reset();
         document.getElementById('editId').value = '';
-        document.getElementById('editSource').value = '';
         document.getElementById('projectImagePath').value = '';
         if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
     } else {
@@ -297,16 +294,12 @@ function toggleProjectForm(isEdit = false) {
 } 
 
 async function renderAdminProjects() {
-    let projects = getProjects(); // Start with localStorage as fallback
+    let projects = [];
     if (supabaseClient) {
-        const remote = await fetchProjectsRemote();
         const content = await fetchContentRemote();
-        const contentProjects = content && content.projects ? content.projects.map(p => ({...p, source: 'content'})) : [];
-        const tableProjects = remote && Array.isArray(remote) ? remote.map(p => ({...p, source: 'table'})) : [];
-        if (tableProjects.length > 0 || contentProjects.length > 0) {
-            projects = [...contentProjects, ...tableProjects];
-        }
-        // Else keep localStorage data
+        projects = content && content.projects ? content.projects : [];
+    } else {
+        projects = getProjects();
     }
 
     const list = document.getElementById('adminProjectList');
@@ -331,7 +324,7 @@ async function renderAdminProjects() {
         if (cur) catSel.value = cur;
     }
 
-    filtered.forEach(project => {
+    filtered.forEach((project, i) => {
         const item = document.createElement('div');
         item.className = 'admin-project-item';
         // try to render preview image (remote URL or base64 stored locally)
@@ -346,8 +339,8 @@ async function renderAdminProjects() {
                 </div>
             </div>
             <div class="admin-actions">
-                <button onclick="editProject(${project.id}, '${project.source || 'table'}')" class="cta-button btn-edit">EDIT</button>
-                <button onclick="deleteProject(${project.id}, '${project.source || 'table'}')" class="cta-button btn-delete">DELETE</button>
+                <button onclick="editProject(${i})" class="cta-button btn-edit">EDIT</button>
+                <button onclick="deleteProject(${i})" class="cta-button btn-delete">DELETE</button>
             </div>
         `;
         list.appendChild(item);
@@ -455,19 +448,8 @@ async function handleImageUpload(fileInput) {
 
 async function saveProject(e) {
     e.preventDefault();
-    const id = document.getElementById('editId').value;
-    const source = document.getElementById('editSource').value || 'table';
+    const i = document.getElementById('editId').value;
 
-    if (!supabaseClient) {
-        alert('Supabase not configured. Cannot save project.');
-        return;
-    }
-
-    // Handle image file (if user selected a new file)
-    const imageInput = document.getElementById('projectImage');
-    const fileBlob = (imageInput && imageInput.files && imageInput.files[0]) ? imageInput.files[0] : null;
-
-    // Handle description (WYSIWYG or plain)
     const descEl = document.getElementById('projectDescription');
     let formattedDescription = '';
     let plainDescription = '';
@@ -481,136 +463,67 @@ async function saveProject(e) {
     }
 
     const payload = {
-        id: id ? parseInt(id) : null,
         title: document.getElementById('projectTitle').value,
         category: document.getElementById('projectCategory').value,
         description: formattedDescription,
         plain_description: plainDescription,
-        video: (document.getElementById('projectVideoLink') && document.getElementById('projectVideoLink').value) ? document.getElementById('projectVideoLink').value.trim() : ''
+        video: (document.getElementById('projectVideoLink') && document.getElementById('projectVideoLink').value) ? document.getElementById('projectVideoLink').value.trim() : '',
+        image: document.getElementById('projectImagePath').value || ''
     };
 
-    try {
-        let saved;
-        if (source === 'table') {
-            saved = await saveProjectRemote(payload, fileBlob);
-        } else if (source === 'content') {
-            // save to site_content
-            const content = await fetchContentRemote() || {};
-            if (!content.projects) content.projects = [];
-            const idx = content.projects.findIndex(p => p.id == id);
-            if (idx !== -1) {
-                content.projects[idx] = { ...content.projects[idx], ...payload };
-            } else {
-                // new, assign id
-                payload.id = Date.now(); // simple id
-                content.projects.push(payload);
-            }
-            // save back
-            const savePayload = { key: 'site_content', value: content, updated_at: new Date() };
-            const { error } = await supabaseClient.from('site_content').upsert(savePayload, { onConflict: 'key' });
-            if (error) throw error;
-            window.__adminContent = content;
-            saved = payload;
-        }
-
-        if (saved) {
-            const projects = getProjects();
-            const idx = projects.findIndex(p => p.id === (saved && saved.id));
-            const localObj = {
-                id: saved.id,
-                title: saved.title,
-                category: saved.category,
-                image: saved.image || saved.image_url || saved.image_path,
-                description: saved.description,
-                plainDescription: saved.plain_description || saved.plainDescription
-            };
-            if (idx !== -1) projects[idx] = localObj; else projects.push(localObj);
-            saveProjects(projects);
-        }
-
-        toggleProjectForm();
-        await renderAdminProjects();
-        alert('Project saved successfully!');
-    } catch (e) {
-        console.error('saveProject error', e);
-        alert('Error saving project: ' + (e.message || e));
-    }
-}
-
-async function editProject(id, source = 'table') {
-    if (!supabaseClient) {
-        alert('Supabase not configured. Cannot edit project.');
-        return;
-    }
-    let project = null;
-    try {
-        if (source === 'table') {
-            const { data, error } = await supabaseClient.from('projects').select('*').eq('id', id).single();
-            if (!error) project = data;
-        } else if (source === 'content') {
-            const content = await fetchContentRemote();
-            if (content && content.projects) {
-                project = content.projects.find(p => p.id == id);
-            }
-        }
-    } catch (e) { console.error('fetch project', e); }
-
-    if (project) {
-        const formTitle = document.getElementById('formTitle');
-        if (formTitle) formTitle.textContent = "Edit Project";
-        document.getElementById('editId').value = project.id;
-        document.getElementById('editSource').value = source;
-        document.getElementById('projectTitle').value = project.title || '';
-        document.getElementById('projectCategory').value = project.category || '';
-        document.getElementById('projectImagePath').value = project.image || ''; // Store current image path
-        // populate video link if present
-        const vidInput = document.getElementById('projectVideoLink'); if (vidInput) vidInput.value = project.video || project.video_url || '';
-        // Use formatted HTML if editor, otherwise fill textarea
-        const descEl = document.getElementById('projectDescription');
-        if (descEl && descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') {
-            descEl.innerHTML = project.description || project.plainDescription || '';
-        } else if (descEl) {
-            descEl.value = project.plainDescription || project.description || '';
-        }
-
-        // Remove required from image input when editing (already has image)
-        document.getElementById('projectImage').removeAttribute('required');
-
-        toggleProjectForm(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        updateProjectPreview();
+    const projects = (window.__adminContent && window.__adminContent.projects) || [];
+    if (i !== '') {
+        // edit
+        projects[i] = { ...projects[i], ...payload };
     } else {
-        alert('Project not found.');
+        // new
+        projects.push(payload);
     }
+    window.__adminContent.projects = projects;
+
+    toggleProjectForm();
+    renderAdminProjects();
+    saveContent();
+    alert('Project saved successfully!');
 }
 
-async function deleteProject(id, source = 'table') {
-    if (!confirm("Are you sure you want to delete this project?")) return;
-    if (!supabaseClient) {
-        alert('Supabase not configured. Cannot delete project.');
+function editProject(i) {
+    const projects = (window.__adminContent && window.__adminContent.projects) || [];
+    const project = projects[i];
+    if (!project) {
+        alert('Project not found.');
         return;
     }
-    try {
-        if (source === 'table') {
-            await deleteProjectRemote(id);
-        } else if (source === 'content') {
-            // delete from site_content
-            const content = await fetchContentRemote();
-            if (content && content.projects) {
-                content.projects = content.projects.filter(p => p.id != id);
-                // save back
-                const payload = { key: 'site_content', value: content, updated_at: new Date() };
-                const { error } = await supabaseClient.from('site_content').upsert(payload, { onConflict: 'key' });
-                if (error) throw error;
-                window.__adminContent = content;
-            }
-        }
 
-        let projects = getProjects();
-        projects = projects.filter(p => p.id !== id);
-        saveProjects(projects);
-        await renderAdminProjects();
-    } catch (e) { console.error('deleteProject error', e); alert('Delete failed: ' + (e.message || e)); }
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = "Edit Project";
+    document.getElementById('editId').value = i; // store index
+    document.getElementById('projectTitle').value = project.title || '';
+    document.getElementById('projectCategory').value = project.category || '';
+    document.getElementById('projectImagePath').value = project.image || '';
+    const vidInput = document.getElementById('projectVideoLink'); if (vidInput) vidInput.value = project.video || project.video_url || '';
+    const descEl = document.getElementById('projectDescription');
+    if (descEl && descEl.getAttribute && descEl.getAttribute('contenteditable') === 'true') {
+        descEl.innerHTML = project.description || project.plainDescription || '';
+    } else if (descEl) {
+        descEl.value = project.plainDescription || project.description || '';
+    }
+
+    document.getElementById('projectImage').removeAttribute('required');
+
+    toggleProjectForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateProjectPreview();
+}
+
+function deleteProject(i) {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    const projects = (window.__adminContent && window.__adminContent.projects) || [];
+    if (!projects[i]) return;
+    projects.splice(i, 1);
+    window.__adminContent.projects = projects;
+    renderAdminProjects();
+    saveContent();
 }
 
 /* ------------------ Content management (WYSIWYG) ------------------ */

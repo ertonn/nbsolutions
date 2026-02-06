@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
           const origName = payload[nameKey] ? String(payload[nameKey]) : `${keyBase}.pdf`;
           const safeName = origName.replace(/[^a-zA-Z0-9._-]/g, '_');
           const path = `brochures/${Date.now()}_${safeName}`;
-          const bucket = 'site-assets';
+          const bucket = process.env.SUPABASE_BUCKET || 'storage';
 
           const { data: uploadData, error: uploadError } = await supabase.storage.from(bucket).upload(path, buffer, { contentType: 'application/pdf', upsert: true });
           if (uploadError) { console.error('Supabase storage upload error', uploadError); return; }

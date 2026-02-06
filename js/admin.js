@@ -3,6 +3,18 @@ let supabaseClient = null;
 let ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin'; // kept for fallback
 const STORAGE_KEY = "nb_projects_data";
 
+// Storage bucket (public bucket you created)
+const STORAGE_BUCKET = 'storage';
+
+// Gallery upload limits
+const GALLERY_MAX_FILES = 10;
+const GALLERY_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+// Temp state for gallery files while editing a project
+let __projectGalleryFiles = []; // newly selected File objects
+let __projectExistingGallery = []; // existing URLs from project.gallery
+let __projectRemovedGallery = []; // URLs removed by admin during edit
+
 document.addEventListener('DOMContentLoaded', () => {
     initSupabase();
     if (localStorage.getItem('admin_logged_in') === 'true') {
@@ -271,6 +283,11 @@ function toggleProjectForm(isEdit = false) {
         document.getElementById('editId').value = '';
         document.getElementById('projectImagePath').value = '';
         if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
+        // clear gallery state when closing
+        __projectGalleryFiles = [];
+        __projectExistingGallery = [];
+        __projectRemovedGallery = [];
+        renderProjectGalleryPreview();
     } else {
         modal.classList.add('active');
         modal.setAttribute('aria-hidden','false');
@@ -284,6 +301,11 @@ function toggleProjectForm(isEdit = false) {
             setTimeout(() => document.getElementById('projectTitle').focus(), 50);
             // ensure preview starts fresh
             if (imgPreview) { delete imgPreview.dataset.temp; imgPreview.src = 'assets/images/icons/placeholder.svg'; }
+            // clear any gallery previews
+            __projectGalleryFiles = [];
+            __projectExistingGallery = [];
+            __projectRemovedGallery = [];
+            renderProjectGalleryPreview();
             updateProjectPreview();
             // ensure WYSIWYG toolbar reflects the editor state
             setTimeout(()=>{ updateWysiwygToolbarState(); }, 60);
@@ -486,6 +508,42 @@ async function saveProject(e) {
     };
 
     try {
+        // Prepare gallery URLs: start with existing (minus removed) and upload new files if present
+        let galleryUrls = (__projectExistingGallery || []).filter(u => !__projectRemovedGallery.includes(u));
+
+        if (__projectGalleryFiles && __projectGalleryFiles.length > 0) {
+            if (supabaseClient) {
+                // upload each file to Supabase Storage under projects/gallery/
+                for (const f of __projectGalleryFiles) {
+                    const safeName = f.name.replace(/[^a-z0-9.\-_.]/gi,'_');
+                    const path = `projects/gallery/${Date.now()}_${safeName}`;
+                    try {
+                        const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(path, f, { upsert: true });
+                        if (uploadError) throw uploadError;
+                        const { data: publicData, error: publicErr } = await supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+                        if (publicErr) throw publicErr;
+                        if (publicData && publicData.publicUrl) galleryUrls.push(publicData.publicUrl);
+                    } catch (uerr) {
+                        console.error('Gallery upload error for', f.name, uerr);
+                        alert('Failed to upload gallery image: ' + f.name + '\n' + (uerr.message || uerr));
+                    }
+                }
+            } else {
+                // fallback: store base64 in localStorage similar to single image flow
+                for (const f of __projectGalleryFiles) {
+                    try {
+                        const dataUrl = await readFileAsDataURL(f);
+                        const filename = `${Date.now()}-${f.name.toLowerCase().replace(/[^a-z0-9.]/g,'-')}`;
+                        localStorage.setItem('img_' + filename, dataUrl);
+                        galleryUrls.push(`assets/images/different categories/projects/${filename}`);
+                    } catch (e) { console.warn('local gallery save failed', e); }
+                }
+            }
+        }
+
+        // attach gallery to payload
+        payload.gallery = galleryUrls;
+
         let saved = await saveProjectRemote(payload, fileBlob);
 
         if (saved) {
@@ -497,11 +555,18 @@ async function saveProject(e) {
                 category: saved.category,
                 image: saved.image || saved.image_url || saved.image_path,
                 description: saved.description,
-                plainDescription: saved.plain_description || saved.plainDescription
+                plainDescription: saved.plain_description || saved.plainDescription,
+                gallery: saved.gallery || (payload.gallery || [])
             };
             if (idx !== -1) projects[idx] = localObj; else projects.push(localObj);
             saveProjects(projects);
         }
+
+        // reset gallery temp state
+        __projectGalleryFiles = [];
+        __projectExistingGallery = [];
+        __projectRemovedGallery = [];
+        renderProjectGalleryPreview();
 
         toggleProjectForm();
         await renderAdminProjects();
@@ -539,6 +604,12 @@ async function editProject(id) {
         }
 
         document.getElementById('projectImage').removeAttribute('required');
+
+        // Initialize gallery state for editing
+        __projectExistingGallery = Array.isArray(project.gallery) ? project.gallery.slice() : [];
+        __projectGalleryFiles = [];
+        __projectRemovedGallery = [];
+        renderProjectGalleryPreview();
 
         toggleProjectForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -988,6 +1059,18 @@ function updateProjectPreview() {
             document.getElementById('projPreviewDescription').innerHTML = formatDescription(desc);
         }
 
+        // gallery preview (optional)
+        try {
+            const galleryEl = document.getElementById('projPreviewGallery');
+            if (galleryEl) {
+                galleryEl.innerHTML = '';
+                // existing URLs
+                (__projectExistingGallery || []).forEach(url => { if (__projectRemovedGallery.includes(url)) return; const i = document.createElement('img'); i.src = url; i.style.width = '64px'; i.style.height = '48px'; i.style.objectFit = 'cover'; i.style.borderRadius = '6px'; galleryEl.appendChild(i); });
+                // newly selected files
+                __projectGalleryFiles.forEach(file => { const reader = new FileReader(); const i = document.createElement('img'); i.style.width = '64px'; i.style.height = '48px'; i.style.objectFit = 'cover'; i.style.borderRadius = '6px'; reader.onload = function(ev){ i.src = ev.target.result; }; reader.readAsDataURL(file); galleryEl.appendChild(i); });
+            }
+        } catch(e){}
+
         // video preview (optional)
         try {
             const vidEl = document.getElementById('projPreviewVideo');
@@ -1040,6 +1123,71 @@ if (projectImageInput) projectImageInput.addEventListener('change', function(e){
     };
     reader.readAsDataURL(file);
 });
+
+// handle gallery input preview + selection (multiple)
+const projectGalleryInput = document.getElementById('projectGallery');
+if (projectGalleryInput) projectGalleryInput.addEventListener('change', function(e){
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // enforce limits: max files and max size
+    const totalExisting = (__projectExistingGallery && __projectExistingGallery.length) ? __projectExistingGallery.length : 0;
+    const allowable = Math.max(0, GALLERY_MAX_FILES - totalExisting - __projectGalleryFiles.length);
+    if (files.length > allowable) {
+        alert(`You can only add ${allowable} more image(s) (max ${GALLERY_MAX_FILES} in total).`);
+    }
+
+    files.slice(0, allowable).forEach(f => {
+        if (f.size > GALLERY_MAX_FILE_SIZE) { alert(`${f.name} is larger than ${GALLERY_MAX_FILE_SIZE/1024/1024}MB and was skipped.`); return; }
+        __projectGalleryFiles.push(f);
+    });
+
+    renderProjectGalleryPreview();
+});
+
+function renderProjectGalleryPreview() {
+    const preview = document.getElementById('projectGalleryPreview');
+    if (!preview) return;
+    preview.innerHTML = '';
+
+    // existing URLs first
+    (__projectExistingGallery || []).forEach((url, idx) => {
+        if (__projectRemovedGallery.includes(url)) return; // skip removed
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+        div.style.width = '80px';
+        div.style.height = '80px';
+        div.style.overflow = 'hidden';
+        div.style.borderRadius = '6px';
+        const img = document.createElement('img');
+        img.src = url; img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover';
+        const btn = document.createElement('button');
+        btn.textContent = '×'; btn.title = 'Remove';
+        btn.style.position = 'absolute'; btn.style.top = '4px'; btn.style.right = '4px'; btn.style.background = 'rgba(0,0,0,0.6)'; btn.style.color = '#fff'; btn.style.border = 'none'; btn.style.borderRadius = '50%'; btn.style.width = '20px'; btn.style.height = '20px'; btn.style.cursor = 'pointer';
+        btn.addEventListener('click', function(){ __projectRemovedGallery.push(url); renderProjectGalleryPreview(); updateProjectPreview(); });
+        div.appendChild(img); div.appendChild(btn); preview.appendChild(div);
+    });
+
+    // newly selected files
+    __projectGalleryFiles.forEach((file, idx) => {
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+        div.style.width = '80px';
+        div.style.height = '80px';
+        div.style.overflow = 'hidden';
+        div.style.borderRadius = '6px';
+        const img = document.createElement('img');
+        img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover';
+        const btn = document.createElement('button');
+        btn.textContent = '×'; btn.title = 'Remove';
+        btn.style.position = 'absolute'; btn.style.top = '4px'; btn.style.right = '4px'; btn.style.background = 'rgba(0,0,0,0.6)'; btn.style.color = '#fff'; btn.style.border = 'none'; btn.style.borderRadius = '50%'; btn.style.width = '20px'; btn.style.height = '20px'; btn.style.cursor = 'pointer';
+        btn.addEventListener('click', function(){ __projectGalleryFiles.splice(idx,1); renderProjectGalleryPreview(); updateProjectPreview(); });
+        const reader = new FileReader();
+        reader.onload = function(ev){ img.src = ev.target.result; };
+        reader.readAsDataURL(file);
+        div.appendChild(img); div.appendChild(btn); preview.appendChild(div);
+    });
+}
 
 
 
@@ -1192,7 +1340,7 @@ function createEmbedForVideo(url, height = 210) {
     d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value;
 
     // default bucket (hidden from UI)
-    const bucketName = 'site-assets';
+    const bucketName = STORAGE_BUCKET;
 
     try {
         setStatus('Preparing uploads...', true);

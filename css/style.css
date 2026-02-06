@@ -990,6 +990,16 @@ nav {
     }
 }
 
+/* Modal gallery thumbnails */
+#modalGallery img {
+    margin-right: 8px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: border-color 0.15s ease;
+}
+#modalGallery img:hover { border-color: rgba(255,255,255,0.25); }
+#modalGallery img.selected { border-color: var(--main-color); }
+
 /* Footer - LIGHT MODERN */
 .main-footer {
     padding: 60px 40px;

@@ -555,6 +555,13 @@
                             <div class="small-muted">If provided, a preview will appear in the project card viewer and public modal.</div>
                         </div>
 
+                        <div class="form-group">
+                            <label>Gallery Images (optional)</label>
+                            <input type="file" id="projectGallery" accept="image/*" multiple>
+                            <div class="small-muted">You can upload up to 10 images (max 5MB each). Thumbnails appear below; click the × on a thumbnail to remove it before saving.</div>
+                            <div id="projectGalleryPreview" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;"></div>
+                        </div>
+
                         <div class="form-group full-width">
                             <label>Description</label>
                             <div class="wysiwyg-toolbar" role="toolbar" aria-label="Project description formatting">
@@ -579,6 +586,7 @@
                     <h3 id="projPreviewTitle">Project Title</h3>
                     <div class="muted" id="projPreviewCategory">Category</div>
                     <div style="margin-top:10px;" id="projPreviewDescription">Short description preview will appear here.</div>
+                    <div id="projPreviewGallery" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;"></div>
                     <div id="projPreviewVideo" style="margin-top:12px; display:none;"></div>
                 </aside>
             </form>

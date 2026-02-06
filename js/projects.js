@@ -153,6 +153,25 @@ function createEmbedForVideo(url) {
 
             document.getElementById('modalImage').src = getImageSrc(project.image);
 
+            // gallery (optional) — show thumbnails above video; clicking replaces modal hero image
+            const galleryContainer = document.getElementById('modalGallery');
+            if (galleryContainer) {
+                if (project.gallery && Array.isArray(project.gallery) && project.gallery.length > 0) {
+                    galleryContainer.style.display = 'flex';
+                    galleryContainer.innerHTML = '';
+                    project.gallery.forEach((g, i) => {
+                        const thumb = document.createElement('img');
+                        thumb.src = g; thumb.alt = `Gallery ${i+1}`;
+                        thumb.style.width = '120px'; thumb.style.height = '80px'; thumb.style.objectFit = 'cover'; thumb.style.borderRadius = '6px'; thumb.style.cursor = 'pointer';
+                        thumb.addEventListener('click', function(){ document.getElementById('modalImage').src = g; });
+                        galleryContainer.appendChild(thumb);
+                    });
+                } else {
+                    galleryContainer.style.display = 'none';
+                    galleryContainer.innerHTML = '';
+                }
+            }
+
             // show video if present (placed under title)
             const videoContainer = document.getElementById('modalVideo');
             if (videoContainer) {

@@ -112,8 +112,7 @@ function createEmbedForVideo(url) {
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">${project.title}</h3>
-                        ${project.video ? `<div class="card-video">${createEmbedForVideo(project.video, 150)}</div>` : ''}
-                        <a href="javascript:void(0)" class="project-link" onclick="openProjectModal(${project.id})">View in Portfolio</a>
+                        <a href="javascript:void(0)" class="project-link" onclick="openProjectModal(${project.id})">View Project</a>
                     </div>
                 `;
                 grid.appendChild(card);

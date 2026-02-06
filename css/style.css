@@ -982,6 +982,8 @@ nav {
     border-bottom-color: var(--white-color);
 }
 
+
+
 @media (max-width: 768px) {
     .project-links-grid {
         grid-template-columns: 1fr;

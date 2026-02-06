@@ -6,13 +6,13 @@
   "services.hero.desc": "Civil, Infrastructure, and Environmental Engineering Consulting.",
 
   "about.section.title": "Civil – Infrastructure – Environment",
-  "about.section.desc": "NB Engineering Consulting specializes in transport, railway, and water infrastructure. <span class=\"hide-mobile\">The company supports international and local clients through all project stages, from feasibility and hydraulic modelling to detailed design, tender documentation, and technical reviews, with a strong focus on constructability and compliance with international standards.</span>",
+  "about.section.desc": "From feasibility studies and surveys to constructible, BIM-based design for roads, railways, bridges, and water systems.<br>We support international consultants, public authorities, and developers with technically sound, coordinated, and buildable engineering solutions.<h3 class=\"about-tagline\">Why NB Engineering Consulting</h3><ul class=\"why-list\"><li>Engineering-driven approach, not template-based design</li><li>Strong multidisciplinary mindset (rail, roads, structures, hydraulics)</li><li>Focus on constructability and real-world constraints</li><li>Advanced BIM-based workflows for coordination and decision-making</li><li>Experience working alongside international consultants and IFI-funded projects</li><li>We operate at the intersection of engineering, data, and buildability.</li></ul>",
 
   "homepage.hero.title": "Building Your Dreams",
   "homepage.hero.desc": "Expert construction services with over 20 years of experience in delivering safe, sustainable infrastructure projects.",
 
   "homepage.about.title": "Your Trusted Partner in Infrastructure & Engineering Excellence",
-  "homepage.about.desc": "NB Engineering Consulting specializes in transport, railway, and water infrastructure. <span class=\"hide-mobile\">The company supports international and local clients through all project stages, from feasibility and hydraulic modeling to detailed design, tender documentation, and technical reviews, with a strong focus on constructability and compliance with international standards.</span>",
+  "homepage.about.desc": "<h3 class=\"about-tagline\">Integrated Infrastructure &amp; Railway Engineering</h3>\n    <p><strong>NB Engineering Consulting</strong> — From feasibility studies and surveys to constructible, BIM-based design for roads, railways, bridges, and water systems.</p>\n    <p class=\"hide-mobile\">We support international consultants, public authorities, and developers with technically sound, coordinated, and buildable engineering solutions.</p>",
 
   "contact.features": [
     "24/7 Support",

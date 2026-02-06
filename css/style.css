@@ -432,8 +432,24 @@ nav {
 .about-description {
     font-size: 19px;
     line-height: 1.7;
-    margin-bottom: 50px;
+    margin-bottom: 12px; /* reduced to sit neatly above Read More */
     color: var(--text-color);
+}
+
+.read-more-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: #7a7a7a;
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 1px dotted #d0d0d0;
+    padding-bottom: 2px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.read-more-link:hover {
+    color: var(--black-color);
+    border-bottom-color: var(--industrial-navy);
 }
 
 .about-cards {
@@ -469,8 +485,103 @@ nav {
     padding-left: 20px;
 }
 
-.about-card-list li {
+..about-card-list li {
     margin-bottom: 8px;
+}
+
+/* About - custom sections */
+.about-tagline {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--industrial-navy);
+    margin-top: 10px;
+    margin-bottom: 16px;
+}
+
+.why-list {
+    list-style: disc;
+    padding-left: 20px;
+    margin-bottom: 30px;
+    color: var(--text-color);
+}
+
+.why-list li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.how-we-work-section,
+.lead-engineer-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: linear-gradient(180deg, rgba(241,243,248,0.8), rgba(255,255,255,0.8));
+    border-radius: 20px;
+}
+
+.how-list {
+    list-style: none;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.how-list li {
+    position: relative;
+    padding-left: 28px;
+}
+
+.how-list li::before {
+    content: '\2192';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--accent-color);
+    font-weight: 800;
+}
+
+.lead-engineer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lead-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--black-color);
+}
+
+.lead-role {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--main-color);
+    margin-bottom: 8px;
+}
+
+.lead-bio {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .about-content-wrapper {
+        flex-direction: column;
+    }
+    .about-image {
+        border-radius: 0 0 40px 40px;
+        height: 320px;
+    }
+    .about-text-content {
+        border-radius: 40px 40px 0 0;
+        padding: 30px 20px;
+    }
+    .how-we-work-section,
+    .lead-engineer-section {
+        padding: 20px;
+    }
 }
 
 /* Projects */

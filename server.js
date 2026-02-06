@@ -68,16 +68,71 @@ app.get('/api/projects/:id', async (req, res) => {
 app.post('/api/projects', requireAdmin, async (req, res) => {
   try {
     const payload = req.body || {};
-    // handle imageBase64 if present: write to assets folder
+    // handle imageBase64 if present: upload to Supabase Storage when service key is available, otherwise write to assets folder
     let imagePath = payload.image || '';
     if (payload.imageBase64 && payload.imageFilename) {
       const filename = `${Date.now()}-${payload.imageFilename.replace(/[^a-z0-9.\-]/gi,'_')}`;
-      const outDir = path.join(__dirname, 'assets', 'images', 'different categories', 'projects');
-      if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-      const outPath = path.join(outDir, filename);
-      const data = payload.imageBase64.split(',').pop();
-      fs.writeFileSync(outPath, Buffer.from(data, 'base64'));
-      imagePath = `assets/images/different categories/projects/${filename}`;
+      const data = ('' + payload.imageBase64).replace(/^data:.*;base64,/, '');
+
+      if (supabaseAdmin) {
+        try {
+          const buffer = Buffer.from(data, 'base64');
+          const remotePath = `projects/images/${Date.now()}_${filename}`;
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage.from(BUCKET).upload(remotePath, buffer, { upsert: true });
+          if (uploadError) throw uploadError;
+          const { data: publicData, error: publicErr } = await supabaseAdmin.storage.from(BUCKET).getPublicUrl(remotePath);
+          if (publicErr) throw publicErr;
+          imagePath = publicData && publicData.publicUrl ? publicData.publicUrl : (publicData && publicData.data && publicData.data.publicUrl) ? publicData.data.publicUrl : imagePath;
+        } catch (e) {
+          console.warn('Supabase admin upload failed, falling back to writing file locally', e);
+        }
+      }
+
+      // fallback to local disk if upload didn't set imagePath
+      if (!imagePath) {
+        const outDir = path.join(__dirname, 'assets', 'images', 'different categories', 'projects');
+        if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+        const outPath = path.join(outDir, filename);
+        fs.writeFileSync(outPath, Buffer.from(data, 'base64'));
+        imagePath = `assets/images/different categories/projects/${filename}`;
+      }
+    }
+
+    // handle galleryBase64 if present: upload each image via Supabase admin storage when possible
+    let galleryUrls = payload.gallery && Array.isArray(payload.gallery) ? payload.gallery.slice() : [];
+    if (payload.galleryBase64 && Array.isArray(payload.galleryBase64) && payload.galleryBase64.length) {
+      for (const g of payload.galleryBase64) {
+        const name = g.filename ? g.filename.replace(/[^a-z0-9.\-]/gi,'_') : `gallery_${Date.now()}.jpg`;
+        const data = ('' + g.dataUrl).replace(/^data:.*;base64,/, '');
+        if (supabaseAdmin) {
+          try {
+            const buffer = Buffer.from(data, 'base64');
+            const remotePath = `projects/gallery/${Date.now()}_${name}`;
+            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage.from(BUCKET).upload(remotePath, buffer, { upsert: true });
+            if (uploadError) throw uploadError;
+            const { data: publicData, error: publicErr } = await supabaseAdmin.storage.from(BUCKET).getPublicUrl(remotePath);
+            if (publicErr) throw publicErr;
+            const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : (publicData && publicData.data && publicData.data.publicUrl) ? publicData.data.publicUrl : null;
+            if (publicUrl) galleryUrls.push(publicUrl);
+            continue;
+          } catch (e) {
+            console.warn('Gallery upload failed for', name, e);
+          }
+        }
+        // fallback to local disk
+        try {
+          const outDir = path.join(__dirname, 'assets', 'images', 'different categories', 'projects');
+          if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+          const outName = `${Date.now()}_${name}`;
+          const outPath = path.join(outDir, outName);
+          fs.writeFileSync(outPath, Buffer.from(data, 'base64'));
+          galleryUrls.push(`assets/images/different categories/projects/${outName}`);
+        } catch (e) { console.warn('Local gallery write failed for', name, e); }
+      }
+      // replace payload.gallery with merged results
+      payload.gallery = galleryUrls;
+      // remove galleryBase64 to avoid storing large base64 in DB
+      delete payload.galleryBase64;
     }
 
     if (supabaseAdmin) {

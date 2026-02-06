@@ -455,16 +455,28 @@ async function handleImageUpload(fileInput) {
     // Create a sanitized filename
     const timestamp = Date.now();
     const sanitizedName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-');
-    const filename = `${timestamp}-${sanitizedName}`;
-    const relativePath = `assets/images/different categories/projects/${filename}`;
 
-    // Convert to base64 and store temporarily
-    // When migrating to PHP, replace this with actual file upload
+    // Prefer uploading to Supabase Storage (if available), otherwise fall back to base64 local storage
+    const filename = `${timestamp}-${sanitizedName}`;
+    if (supabaseClient) {
+        try {
+            const remotePath = `projects/images/${timestamp}-${sanitizedName}`;
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(remotePath, file, { upsert: true });
+            if (uploadError) throw uploadError;
+            const { data: publicData, error: publicErr } = await supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(remotePath);
+            if (publicErr) throw publicErr;
+            if (publicData && publicData.publicUrl) return publicData.publicUrl;
+            if (publicData && publicData.data && publicData.data.publicUrl) return publicData.data.publicUrl;
+        } catch (e) {
+            console.warn('Supabase storage upload failed, falling back to base64 storage', e);
+        }
+    }
+
+    // Fallback: convert to base64 and store temporarily
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = function (e) {
-            // Store the image data URL temporarily
-            // localStorage.setItem(`img_${filename}`, e.target.result); // Removed to avoid quota issues
+            try { localStorage.setItem('img_' + filename, e.target.result); } catch (err) { console.warn('Could not store image locally', err); }
             resolve(relativePath);
         };
         reader.onerror = reject;
@@ -476,10 +488,8 @@ async function saveProject(e) {
     e.preventDefault();
     const id = document.getElementById('editId').value;
 
-    if (!supabaseClient) {
-        alert('Supabase not configured. Cannot save project.');
-        return;
-    }
+    // Determine whether we can upload directly from client (anon key) or should use server API as fallback
+    const useClientStorage = !!supabaseClient;
 
     // Handle image file (if user selected a new file)
     const imageInput = document.getElementById('projectImage');
@@ -508,6 +518,24 @@ async function saveProject(e) {
     };
 
     try {
+        // If a new cover image file was selected, upload it to storage (preferred) or send base64 to server
+        if (fileBlob) {
+            if (useClientStorage) {
+                const uploadedImage = await handleImageUpload(imageInput);
+                if (uploadedImage) {
+                    payload.image = uploadedImage;
+                    document.getElementById('projectImagePath').value = uploadedImage;
+                }
+            } else {
+                // read as base64 and include in payload for server-side upload
+                try {
+                    const dataUrl = await readFileAsDataURL(fileBlob);
+                    payload.imageBase64 = dataUrl;
+                    payload.imageFilename = fileBlob.name || `project_${Date.now()}.jpg`;
+                } catch (e) { console.warn('Could not read image as dataURL', e); }
+            }
+        }
+
         // Prepare gallery URLs: start with existing (minus removed) and upload new files if present
         let galleryUrls = (__projectExistingGallery || []).filter(u => !__projectRemovedGallery.includes(u));
 
@@ -529,14 +557,13 @@ async function saveProject(e) {
                     }
                 }
             } else {
-                // fallback: store base64 in localStorage similar to single image flow
+                // fallback: collect base64 entries to send to server for upload (if server supports it)
+                payload.galleryBase64 = payload.galleryBase64 || [];
                 for (const f of __projectGalleryFiles) {
                     try {
                         const dataUrl = await readFileAsDataURL(f);
-                        const filename = `${Date.now()}-${f.name.toLowerCase().replace(/[^a-z0-9.]/g,'-')}`;
-                        localStorage.setItem('img_' + filename, dataUrl);
-                        galleryUrls.push(`assets/images/different categories/projects/${filename}`);
-                    } catch (e) { console.warn('local gallery save failed', e); }
+                        payload.galleryBase64.push({ filename: f.name, dataUrl });
+                    } catch (e) { console.warn('local gallery base64 read failed', e); }
                 }
             }
         }
@@ -544,7 +571,20 @@ async function saveProject(e) {
         // attach gallery to payload
         payload.gallery = galleryUrls;
 
-        let saved = await saveProjectRemote(payload, fileBlob);
+        let saved = null;
+        if (useClientStorage) {
+            saved = await saveProjectRemote(payload);
+        } else {
+            // Fallback to server endpoint (requires admin pass header)
+            try {
+                const res = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-pass': ADMIN_PASSWORD }, body: JSON.stringify(payload) });
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(txt || 'Server save failed');
+                }
+                saved = await res.json();
+            } catch (e) { throw e; }
+        }
 
         if (saved) {
             const projects = getProjects();
@@ -867,15 +907,10 @@ function readFileAsDataURL(file) {
     });
 }
 
-async function saveProjectRemote(payload, fileBlob) {
+async function saveProjectRemote(payload) {
     if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
         const body = Object.assign({}, payload);
-        if (fileBlob) {
-            const dataUrl = await readFileAsDataURL(fileBlob);
-            body.image = dataUrl; // store image as base64 or handle upload separately
-            body.imageFilename = fileBlob.name || 'upload.jpg';
-        }
         let result;
         if (body.id) {
             // Update existing project
@@ -1214,9 +1249,33 @@ function saveService() {
     }
 
     if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(ev){ doSave(ev.target.result); };
-        reader.readAsDataURL(fileInput.files[0]);
+        const f = fileInput.files[0];
+        // If Supabase client available, upload to STORAGE_BUCKET and store public URL
+        if (supabaseClient) {
+            (async function(){
+                try {
+                    const safeName = f.name.replace(/[^a-z0-9._-]/gi,'_');
+                    const path = `services/icons/${Date.now()}_${safeName}`;
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(path, f, { upsert: true });
+                    if (uploadError) throw uploadError;
+                    const { data: publicData, error: publicErr } = await supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+                    if (publicErr) throw publicErr;
+                    const publicUrl = (publicData && (publicData.publicUrl || (publicData.data && publicData.data.publicUrl))) ? (publicData.publicUrl || publicData.data.publicUrl) : null;
+                    if (publicUrl) { doSave(publicUrl); return; }
+                } catch (e) {
+                    console.warn('Icon upload failed, falling back to base64', e);
+                }
+                // fallback to base64
+                const reader = new FileReader();
+                reader.onload = function(ev){ doSave(ev.target.result); };
+                reader.readAsDataURL(f);
+            })();
+        } else {
+            // no supabase client: fallback to base64
+            const reader = new FileReader();
+            reader.onload = function(ev){ doSave(ev.target.result); };
+            reader.readAsDataURL(f);
+        }
     } else {
         // if editing and preview present, reuse that
         const preview = document.getElementById('serviceIconPreview');

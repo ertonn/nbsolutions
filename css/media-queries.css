@@ -154,6 +154,7 @@
     .service-list li { font-size: 14px; padding: 6px 0; gap:8px; }
 }
 
+@media (max-width: 900px) {
     /* Mobile Header */
     header {
         position: fixed;
@@ -258,7 +259,10 @@
         border-radius: 20px;
         min-height: 400px;
     }
+}
 
+
+@media (max-width: 900px) {
     .hero-title {
         font-size: 40px;
     }
@@ -473,6 +477,7 @@
     }
 
     /* Project items */
+
     .project-grid {
         grid-template-columns: 1fr;
         gap: 30px;

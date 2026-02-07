@@ -5,7 +5,7 @@ const STORAGE_KEY = "nb_projects_data";
 
 // Canonical project categories (fixed set)
 const PROJECT_CATEGORIES = [
-    "Water Supply & Hydraulics",
+    "Water & Hydraulic Systems",
     "Transport & Railways",
     "BIM & Engineering Support",
     "Roads & Structures",

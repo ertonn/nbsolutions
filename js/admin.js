@@ -3,6 +3,15 @@ let supabaseClient = null;
 let ADMIN_PASSWORD = localStorage.getItem('nb_admin_pass') || 'admin'; // kept for fallback
 const STORAGE_KEY = "nb_projects_data";
 
+// Canonical project categories (fixed set)
+const PROJECT_CATEGORIES = [
+    "Water Supply & Hydraulics",
+    "Transport & Railways",
+    "BIM & Engineering Support",
+    "Roads & Structures",
+    "Buildings & Special Projects"
+];
+
 // Storage bucket (public bucket you created)
 const STORAGE_BUCKET = 'storage';
 
@@ -109,9 +118,17 @@ function initAdminUI() {
     const status = document.getElementById('projectFilterStatus');
 
     if (category) {
-        // populate categories dynamically
-        const cats = Array.from(new Set(getProjects().map(p=>p.category))).filter(Boolean);
-        category.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        // populate categories with canonical list first, then include any project categories not in the canonical set
+        const projectCats = Array.from(new Set(getProjects().map(p => p.category))).filter(Boolean);
+        const combined = PROJECT_CATEGORIES.concat(projectCats.filter(c => !PROJECT_CATEGORIES.includes(c)));
+        category.innerHTML = '<option value="">All Categories</option>' + combined.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Ensure the project form's category select uses the canonical list
+    const projectCategorySelect = document.getElementById('projectCategory');
+    if (projectCategorySelect) {
+        const opts = PROJECT_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+        projectCategorySelect.innerHTML = opts;
     }
 
     if (search) search.addEventListener('input', renderAdminProjects);
@@ -129,6 +146,20 @@ function initAdminUI() {
             }
         });
     });
+
+    // Services hero image preview handler
+    const srvImgInput = document.getElementById('content_services_hero_image');
+    const srvImgPreview = document.getElementById('content_services_hero_image_preview');
+    if (srvImgInput && srvImgPreview) {
+        srvImgInput.addEventListener('change', function(e){
+            const f = srvImgInput.files[0];
+            if (f) {
+                const reader = new FileReader();
+                reader.onload = function(ev){ srvImgPreview.src = ev.target.result; srvImgPreview.style.display = ''; };
+                reader.readAsDataURL(f);
+            } else { srvImgPreview.src = ''; srvImgPreview.style.display = 'none'; }
+        });
+    }
 
     // close modals with Escape (clear temp previews)
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { document.querySelectorAll('.modal-backdrop.active').forEach(m => { m.classList.remove('active'); m.setAttribute('aria-hidden','true'); }); const img = document.getElementById('projectImagePreview'); if (img) { delete img.dataset.temp; img.src = 'assets/images/icons/placeholder.svg'; } } });
@@ -633,7 +664,16 @@ async function editProject(id) {
         if (formTitle) formTitle.textContent = "Edit Project";
         document.getElementById('editId').value = project.id;
         document.getElementById('projectTitle').value = project.title || '';
-        document.getElementById('projectCategory').value = project.category || '';
+        const projectCategorySelect = document.getElementById('projectCategory');
+        const projCatVal = project.category || '';
+        if (projectCategorySelect) {
+            if (projCatVal && !Array.from(projectCategorySelect.options).some(o => o.value === projCatVal)) {
+                const opt = document.createElement('option');
+                opt.value = projCatVal; opt.textContent = projCatVal;
+                projectCategorySelect.appendChild(opt);
+            }
+            projectCategorySelect.value = projCatVal;
+        }
         document.getElementById('projectImagePath').value = project.image || '';
         const vidInput = document.getElementById('projectVideoLink'); if (vidInput) vidInput.value = project.video || project.video_url || '';
         const descEl = document.getElementById('projectDescription');
@@ -710,6 +750,15 @@ async function renderContentManager() {
     // services fields
     document.getElementById('content_services_hero_title').value = d['services.hero.title'] || '';
     document.getElementById('content_services_hero_desc').value = d['services.hero.desc'] || '';
+    // Typical Outputs (editable list)
+    const outputsEl = document.getElementById('content_services_outputs');
+    if (outputsEl) outputsEl.value = (d['services.outputs'] || []).join('\n');
+    // Services hero image path and preview
+    document.getElementById('content_services_hero_image_path').value = d['services.hero.image'] || '';
+    const srvPreview = document.getElementById('content_services_hero_image_preview');
+    if (srvPreview) {
+        if (d['services.hero.image']) { srvPreview.src = d['services.hero.image']; srvPreview.style.display = ''; } else { srvPreview.src = ''; srvPreview.style.display = 'none'; }
+    }
 
     // contact features
     document.getElementById('content_contact_section_title').value = d['contact.section.title'] || '';
@@ -820,6 +869,38 @@ async function saveContent() {
     // services
     d['services.hero.title'] = document.getElementById('content_services_hero_title').value;
     d['services.hero.desc'] = document.getElementById('content_services_hero_desc').value;
+
+    // Typical Outputs values (lines -> array)
+    try {
+        const outputsEl = document.getElementById('content_services_outputs');
+        d['services.outputs'] = outputsEl ? outputsEl.value.split('\n').map(l=>l.trim()).filter(Boolean) : (d['services.outputs'] || []);
+    } catch(e) { d['services.outputs'] = d['services.outputs'] || []; }
+
+    // Services hero image: upload if a new file is selected, otherwise keep existing path
+    try {
+        const srvImgInput = document.getElementById('content_services_hero_image');
+        if (srvImgInput && srvImgInput.files && srvImgInput.files[0]) {
+            const file = srvImgInput.files[0];
+            if (supabaseClient) {
+                const safeName = file.name.replace(/\s+/g,'_');
+                const path = `content/services/${Date.now()}_${safeName}`;
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+                if (uploadError) throw uploadError;
+                const { data: publicData, error: publicError } = await supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+                if (publicError) throw publicError;
+                d['services.hero.image'] = publicData && publicData.publicUrl ? publicData.publicUrl : (publicData && publicData.data && publicData.data.publicUrl) || '';
+                document.getElementById('content_services_hero_image_path').value = d['services.hero.image'] || '';
+            } else {
+                alert('Supabase not configured. Cannot upload Services hero image.');
+                d['services.hero.image'] = document.getElementById('content_services_hero_image_path').value || '';
+            }
+        } else {
+            d['services.hero.image'] = document.getElementById('content_services_hero_image_path').value || d['services.hero.image'] || '';
+        }
+    } catch (e) {
+        console.warn('Services hero image upload failed', e);
+        d['services.hero.image'] = document.getElementById('content_services_hero_image_path').value || d['services.hero.image'] || '';
+    }
 
     // contact features (lines -> array)
     d['contact.section.title'] = document.getElementById('content_contact_section_title').value;
@@ -1312,6 +1393,24 @@ function renderBrochuresAdmin() {
     document.getElementById('content_brochure1_description').value = d['brochure1.description'] || '';
     document.getElementById('content_brochure1_pdf_path').value = d['brochure1.pdf_path'] || '';
     document.getElementById('content_brochure1_image_path').value = d['brochure1.image_path'] || '';
+    // set brochure image preview and wire file input preview
+    const b1Prev = document.getElementById('brochure1_image_preview');
+    if (b1Prev) {
+        if (d['brochure1.image_path']) { b1Prev.src = d['brochure1.image_path']; b1Prev.style.display = ''; } else { b1Prev.src = ''; b1Prev.style.display = 'none'; }
+    }
+    const b1Input = document.getElementById('brochure1_image');
+    if (b1Input) {
+        b1Input.onchange = function(){
+            const f = b1Input.files[0];
+            if (f) {
+                const r = new FileReader();
+                r.onload = e => { if (b1Prev) { b1Prev.src = e.target.result; b1Prev.style.display = ''; } };
+                r.readAsDataURL(f);
+            } else {
+                if (b1Prev) { b1Prev.src = ''; b1Prev.style.display = 'none'; }
+            }
+        };
+    }
 
     // Show current PDF
     const currentPdf1 = document.getElementById('brochure1_current_pdf');
@@ -1337,6 +1436,16 @@ function renderBrochuresAdmin() {
       } else {
           currentPdf2.innerHTML = '';
       }
+    }
+
+    // set brochure2 image preview and wire file input preview
+    const b2Prev = document.getElementById('brochure2_image_preview');
+    if (b2Prev) {
+        if (d['brochure2.image_path']) { b2Prev.src = d['brochure2.image_path']; b2Prev.style.display = ''; } else { b2Prev.src = ''; b2Prev.style.display = 'none'; }
+    }
+    const b2Input = document.getElementById('brochure2_image');
+    if (b2Input) {
+        b2Input.onchange = function(){ const f = b2Input.files[0]; if (f){ const r = new FileReader(); r.onload = e => { if (b2Prev) { b2Prev.src = e.target.result; b2Prev.style.display = ''; } }; r.readAsDataURL(f);} else { if (b2Prev){ b2Prev.src=''; b2Prev.style.display='none'; } } };
     }
 }
 
@@ -1439,6 +1548,38 @@ function createEmbedForVideo(url, height = 210) {
             d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;
         }
 
+        // Brochure images (upload if provided)
+        const img1Input = document.getElementById('brochure1_image');
+        if (img1Input && img1Input.files && img1Input.files[0]) {
+            const file = img1Input.files[0];
+            if (supabaseClient) {
+                setStatus(`Uploading ${file.name}...`, true);
+                const url = await uploadFileToBucket(file, bucketName, 'content/brochures');
+                if (url) d['brochure1.image_path'] = url;
+                else { d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value || ''; alert(`Image upload failed: please manually copy the image and set the path.`); }
+            } else {
+                alert('Supabase not configured. Cannot upload brochure image.');
+                d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value || '';
+            }
+        } else {
+            d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value || d['brochure1.image_path'] || '';
+        }
+
+        const img2Input = document.getElementById('brochure2_image');
+        if (img2Input && img2Input.files && img2Input.files[0]) {
+            const file = img2Input.files[0];
+            if (supabaseClient) {
+                setStatus(`Uploading ${file.name}...`, true);
+                const url = await uploadFileToBucket(file, bucketName, 'content/brochures');
+                if (url) d['brochure2.image_path'] = url;
+                else { d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value || ''; alert(`Image upload failed: please manually copy the image and set the path.`); }
+            } else {
+                alert('Supabase not configured. Cannot upload brochure image.');
+                d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value || '';
+            }
+        } else {
+            d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value || d['brochure2.image_path'] || '';
+        }
 
         window.__adminContent = d;
 

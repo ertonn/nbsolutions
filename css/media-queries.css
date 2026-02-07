@@ -138,6 +138,22 @@
         padding-top: 80px;
     }
 
+    /* Tighter service cards for phones */
+    .services-page { padding: 60px 16px; }
+    .service-detail-grid { gap: 12px; }
+    .service-detail-card { padding: 18px; border-radius: 14px; }
+    .service-detail-card .card-header { margin-bottom: 14px; }
+    .service-list li { padding: 8px 0; font-size: 15px; gap: 10px; border-bottom-width:1px; }
+}
+
+@media (max-width: 480px) {
+    .services-page { padding: 40px 12px; }
+    .service-detail-grid { gap: 10px; }
+    .service-detail-card { padding: 14px; border-radius: 12px; }
+    .service-detail-card .card-header { margin-bottom: 10px; }
+    .service-list li { font-size: 14px; padding: 6px 0; gap:8px; }
+}
+
     /* Mobile Header */
     header {
         position: fixed;

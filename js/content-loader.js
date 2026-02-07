@@ -96,6 +96,19 @@
       }
       if (val) { el.src = val; el.style.display = ''; } else { el.style.display = 'none'; }
     });
+
+    // Ensure the Services hero background is updated when a services.hero.image is provided (handles cases where hero was defined in CSS)
+    if (dataset && dataset['services.hero.image']) {
+      try {
+        const val = dataset['services.hero.image'];
+        const hero = document.querySelector('.hero.hero-services');
+        if (hero) {
+          hero.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('${val}')`;
+        }
+        const heroImgEl = document.getElementById('servicesHeroImage') || document.querySelector('.hero.hero-services .hero-bg');
+        if (heroImgEl) { heroImgEl.src = val; heroImgEl.style.display = ''; }
+      } catch(e){ /* ignore */ }
+    }
   }
 
   function applyLists(dataset) {

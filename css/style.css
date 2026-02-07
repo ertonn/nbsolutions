@@ -229,7 +229,13 @@ nav {
 
 .hero.hero-services {
     background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('../assets/images/services/services-human-capital-management-payroll-header-1-2593186272.jpg');
+    position: relative;
+    overflow: hidden;
 }
+
+/* Dynamic hero background image (set via data-content-src -> <img class="hero-bg">) */
+.hero.hero-services .hero-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; filter: brightness(0.6) contrast(1); display:block; }
+.hero.hero-services .hero-content { position:relative; z-index:1; }
 
 .hero.hero-services .hero-title,
 .hero.hero-about .hero-title {
@@ -1101,14 +1107,24 @@ nav {
     }
 }
 
-/* Modal gallery thumbnails */
+/* Modal gallery thumbnails: responsive grid that spans full width and sizes images based on count */
+#modalGallery {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 12px;
+}
 #modalGallery img {
-    margin-right: 8px;
     border: 2px solid transparent;
     border-radius: 6px;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.12s ease;
+    object-fit: cover;
+    width: auto; /* width will be set dynamically per-image */
+    height: auto; /* height will be set dynamically per-image */
+    min-width: 80px;
 }
-#modalGallery img:hover { border-color: rgba(255,255,255,0.25); }
+#modalGallery img:hover { border-color: rgba(255,255,255,0.25); transform: scale(1.02); }
 #modalGallery img.selected { border-color: var(--main-color); }
 
 /* Footer - LIGHT MODERN */

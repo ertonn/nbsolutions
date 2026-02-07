@@ -157,13 +157,37 @@ function createEmbedForVideo(url) {
             const galleryContainer = document.getElementById('modalGallery');
             if (galleryContainer) {
                 if (project.gallery && Array.isArray(project.gallery) && project.gallery.length > 0) {
+                    const imgs = project.gallery.slice();
+                    const n = imgs.length;
+                    const gap = 8; // px (matches CSS gap)
+                    const totalGap = gap * Math.max(0, n - 1);
+                    // width per thumbnail using calc to account for gaps
+                    const widthCalc = `calc((100% - ${totalGap}px) / ${n})`;
+
                     galleryContainer.style.display = 'flex';
+                    galleryContainer.style.gap = gap + 'px';
+                    galleryContainer.style.flexWrap = 'wrap';
                     galleryContainer.innerHTML = '';
-                    project.gallery.forEach((g, i) => {
+
+                    imgs.forEach((g, i) => {
                         const thumb = document.createElement('img');
                         thumb.src = g; thumb.alt = `Gallery ${i+1}`;
-                        thumb.style.width = '120px'; thumb.style.height = '80px'; thumb.style.objectFit = 'cover'; thumb.style.borderRadius = '6px'; thumb.style.cursor = 'pointer';
-                        thumb.addEventListener('click', function(){ document.getElementById('modalImage').src = g; });
+                        // set flexible sizing so the row spans full width
+                        thumb.style.width = widthCalc;
+                        // choose a sensible height depending on count for better composition
+                        let h = '160px';
+                        if (n === 1) h = '420px';
+                        else if (n === 2) h = '260px';
+                        else if (n === 3) h = '220px';
+                        thumb.style.height = h;
+                        thumb.style.objectFit = 'cover';
+                        thumb.style.borderRadius = '6px';
+                        thumb.style.cursor = 'pointer';
+                        thumb.addEventListener('click', function(){ document.getElementById('modalImage').src = g; 
+                            // mark selected thumbnail
+                            galleryContainer.querySelectorAll('img').forEach(img => img.classList.remove('selected'));
+                            thumb.classList.add('selected');
+                        });
                         galleryContainer.appendChild(thumb);
                     });
                 } else {
@@ -184,8 +208,14 @@ function createEmbedForVideo(url) {
                 }
             }
 
+            // Lock background scroll without causing page jump: fix body position and store offset
+            const scrollY = window.scrollY || window.pageYOffset || 0;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.overflow = 'hidden';
             modal.classList.add('show');
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
         }
     };
 
@@ -219,7 +249,17 @@ function createEmbedForVideo(url) {
     function closeModal() {
         const modal = document.getElementById('projectModal');
         modal.classList.remove('show');
+        // restore scroll position and body styles set when opening modal
+        const top = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
         document.body.style.overflow = '';
+        if (top) {
+            const scrollY = -parseInt(top || '0', 10);
+            window.scrollTo(0, scrollY);
+        }
     }
 
     function setupAdminLink(data) {

@@ -47,13 +47,14 @@
     <main>
         <section class="hero hero-small hero-services">
             <div class="hero-container">
+                <img id="servicesHeroImage" class="hero-bg" data-content-src="services.hero.image" alt="" style="display:none;">
                 <div class="hero-content">
                     <span class="section-subtitle">[ Our Expertise ]</span>
                     <h1 class="hero-title" data-content-key="services.hero.title">What We Do</h1>
                     <p class="hero-description" data-content-key="services.hero.desc">Civil, Infrastructure, and Environmental Engineering Consulting.</p>
                 </div>
             </div>
-        </section>
+        </section>    
 
         <section class="services-page">
             <div class="services-container">
@@ -80,31 +81,13 @@
                         <span class="section-subtitle">[ Quality Deliverables ]</span>
                         <h2 class="section-title" style="margin: 0 auto;">Typical Outputs</h2>
                     </div>
-                    <div class="outputs-grid">
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Technical reports and design notes</p>
-                        </div>
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Hydraulic models and calculation files</p>
-                        </div>
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Detailed design drawings (plans, profiles, sections)</p>
-                        </div>
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Bills of Quantities and cost estimates</p>
-                        </div>
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Tender and bid documentation</p>
-                        </div>
-                        <div class="output-item">
-                            <div class="output-dot"></div>
-                            <p>Design review and verification reports</p>
-                        </div>
+                    <div class="outputs-grid" data-content-list="services.outputs">
+                        <template id="output-item-template">
+                            <div class="output-item">
+                                <div class="output-dot"></div>
+                                <p></p>
+                            </div>
+                        </template>
                     </div>
                 </div>
 

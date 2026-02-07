@@ -400,6 +400,19 @@
                         <label>Services Hero Description</label>
                         <input type="text" id="content_services_hero_desc" placeholder="Short description shown under the Services hero">
                     </div>
+                    <div class="form-group">
+                        <label>Services Hero Image</label>
+                        <input type="file" id="content_services_hero_image" accept="image/*">
+                        <small style="display:block; margin-top:5px; color:var(--text-color); opacity:0.7;">Upload an image to use as the hero background on the Services page (uploaded to Supabase storage when saving).</small>
+                        <input type="hidden" id="content_services_hero_image_path">
+                        <img id="content_services_hero_image_preview" src="" alt="" style="display:none; margin-top:8px; max-width:200px; border-radius:8px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Typical Outputs (one per line)</label>
+                        <textarea id="content_services_outputs" rows="6" placeholder="Technical reports and design notes\nHydraulic models and calculation files\nDetailed design drawings (plans, profiles, sections)"></textarea>
+                        <div class="small-muted">Each line becomes an output item in the Services page under "Typical Outputs".</div>
+                    </div>
 
                     <div style="margin-top:12px;">
                         <h4 style="margin:0 0 8px 0;">Manage Service Cards</h4>
@@ -437,8 +450,11 @@
                 <div id="brochure1_current_pdf" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
             </div>
             <div class="form-group">
-                <label>Image Path</label>
-                <input type="text" id="content_brochure1_image_path" class="large-input" placeholder="assets/misc/brochure.jpeg">
+                <label>Image File</label>
+                <input type="file" id="brochure1_image" accept="image/*">
+                <small style="display:block; margin-top:5px; color:var(--text-color); opacity:0.7;">Upload an image to represent this brochure (uploaded to Supabase storage when saving).</small>
+                <input type="hidden" id="content_brochure1_image_path">
+                <img id="brochure1_image_preview" src="" alt="" style="display:none; margin-top:8px; max-width:200px; border-radius:8px;">
             </div>
         </div>
 
@@ -460,8 +476,11 @@
                 <div id="brochure2_current_pdf" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
             </div>
             <div class="form-group">
-                <label>Image Path</label>
-                <input type="text" id="content_brochure2_image_path" class="large-input" placeholder="assets/images/different categories/sitting.png">
+                <label>Image File</label>
+                <input type="file" id="brochure2_image" accept="image/*">
+                <small style="display:block; margin-top:5px; color:var(--text-color); opacity:0.7;">Upload an image to represent this brochure (uploaded to Supabase storage when saving).</small>
+                <input type="hidden" id="content_brochure2_image_path">
+                <img id="brochure2_image_preview" src="" alt="" style="display:none; margin-top:8px; max-width:200px; border-radius:8px;">
             </div>
         </div>
 
@@ -536,12 +555,13 @@
                         <div class="form-group">
                             <label>Category</label>
                             <select id="projectCategory" required>
-                                <option value="Railway Projects">Railway Projects</option>
                                 <option value="Water Supply & Hydraulics">Water Supply & Hydraulics</option>
-                                <option value="Roads & Civil Infrastructure">Roads & Civil Infrastructure</option>
+                                <option value="Transport & Railways">Transport & Railways</option>
+                                <option value="BIM & Engineering Support">BIM & Engineering Support</option>
+                                <option value="Roads & Structures">Roads & Structures</option>
                                 <option value="Buildings & Special Projects">Buildings & Special Projects</option>
                             </select>
-                        </div>
+                        </div>    
                         <div class="form-group">
                             <label>Project Image</label>
                             <input type="file" id="projectImage" accept="image/*" >

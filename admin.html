@@ -421,6 +421,12 @@
                             <button class="cta-button" onclick="showServiceForm()">+ Add New Service</button>
                         </div>
 
+                        <div style="display:flex; gap:12px; align-items:center; margin-top:12px;">
+                            <div id="servicesSaveStatus" style="font-size:13px;color:#666;">&nbsp;</div>
+                            <button class="cta-button" onclick="saveServices()">Save Services</button>
+                            <button class="cta-button" style="background:var(--light-gray); color:var(--black-color);" onclick="renderContentManager()">Discard</button>
+                        </div>
+
                         <!-- Service edit moved to modal dialog (see bottom of page) -->
                     </div>
                 </div>

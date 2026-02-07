@@ -948,6 +948,22 @@ async function saveContentWithConfirm() {
     await saveContent();
 }
 
+// Save Services helper: shows inline status and saves only content-related fields
+async function saveServices() {
+    const statusEl = document.getElementById('servicesSaveStatus');
+    if (statusEl) statusEl.textContent = 'Saving...';
+    try {
+        await saveContent();
+        if (statusEl) {
+            statusEl.textContent = 'Saved.';
+            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+        }
+    } catch (e) {
+        if (statusEl) statusEl.textContent = 'Save failed: ' + (e.message || e);
+        console.error('saveServices error', e);
+    }
+}
+
 function exportContent() {
     const data = window.__adminContent || {};
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});

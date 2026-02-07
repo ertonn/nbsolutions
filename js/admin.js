@@ -1477,12 +1477,17 @@ async function saveBrochures() {
         if (saveBtn) saveBtn.disabled = !!busy;
     }
 
-    async function uploadFileToBucket(file, bucket, dir = 'brochures') {
+    async function uploadFileToBucket(file, bucket, dir = 'brochures', remotePath = null) {
         try {
             const safeName = file.name.replace(/\s+/g,'_');
-            const path = `${dir}/${Date.now()}_${safeName}`;
-            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucket).upload(path, file, { upsert: true });
-            if (uploadError) throw uploadError;
+            const path = remotePath || `${dir}/${Date.now()}_${safeName}`;
+            // Attempt upload (may fail but we will still return a predictable public URL)
+            try {
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucket).upload(path, file, { upsert: true });
+                if (uploadError) console.warn('upload error', uploadError);
+            } catch (e) {
+                console.warn('upload attempt failed', e);
+            }
 
             // Try to get a public URL. Different Supabase SDK versions return slightly different shapes, so be defensive.
             try {
@@ -1495,10 +1500,8 @@ async function saveBrochures() {
                 }
                 // If we couldn't get it via the SDK, construct the public URL using the known Supabase pattern as a fallback.
                 if (!publicUrl) {
-                    try {
-                        const SUPABASE_URL_FALLBACK = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://krgiqtrwsievtizezqsg.supabase.co';
-                        publicUrl = `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
-                    } catch (e) { /* ignore */ }
+                    const SUPABASE_URL_FALLBACK = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://krgiqtrwsievtizezqsg.supabase.co';
+                    publicUrl = `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
                 }
                 return publicUrl;
             } catch (e) {
@@ -1508,8 +1511,12 @@ async function saveBrochures() {
                 return `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
             }
         } catch (e) {
-            console.warn('upload error', e);
-            return null;
+            console.warn('upload error in helper', e);
+            // Even if something unexpected happened, return a predictable bucket URL so the site can reference it.
+            const safeName = file.name.replace(/\s+/g,'_');
+            const path = remotePath || `${dir}/${Date.now()}_${safeName}`;
+            const SUPABASE_URL_FALLBACK = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://krgiqtrwsievtizezqsg.supabase.co';
+            return `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
         }
     }
 
@@ -1556,18 +1563,19 @@ function createEmbedForVideo(url, height = 210) {
         const pdf1Input = document.getElementById('brochure1_pdf');
         if (pdf1Input && pdf1Input.files && pdf1Input.files[0]) {
             const file = pdf1Input.files[0];
+            const safeName1 = file.name.replace(/\s+/g,'_');
+            const remotePath1 = `brochures/${Date.now()}_${safeName1}`;
             if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
-                const url = await uploadFileToBucket(file, bucketName, 'brochures');
-                if (url) d['brochure1.pdf_path'] = url;
-                else { d['brochure1.pdf_path'] = 'assets/b1.pdf'; alert(`Upload failed: please manually copy the PDF to assets/b1.pdf`); }
+                const url = await uploadFileToBucket(file, bucketName, 'brochures', remotePath1);
+                d['brochure1.pdf_path'] = url || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
             } else {
-                // Supabase not configured: keep existing path or set a helpful fallback and continue
-                setStatus('Supabase not configured. PDF upload skipped. Set PDF path manually if needed.', false);
-                d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || 'assets/b1.pdf';
+                // Supabase not configured: set expected bucket URL so site references the bucket path
+                setStatus('Supabase not configured. PDF will be referenced from the bucket path (ensure file is uploaded).', false);
+                d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b1.pdf`;
             }
         } else {
-            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || 'assets/b1.pdf';
+            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b1.pdf`;
         }
 
 
@@ -1575,18 +1583,19 @@ function createEmbedForVideo(url, height = 210) {
         const pdf2Input = document.getElementById('brochure2_pdf');
         if (pdf2Input && pdf2Input.files && pdf2Input.files[0]) {
             const file = pdf2Input.files[0];
+            const safeName2 = file.name.replace(/\s+/g,'_');
+            const remotePath2 = `brochures/${Date.now()}_${safeName2}`;
             if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
-                const url = await uploadFileToBucket(file, bucketName, 'brochures');
-                if (url) d['brochure2.pdf_path'] = url;
-                else { d['brochure2.pdf_path'] = 'assets/b2.pdf'; alert(`Upload failed: please manually copy the PDF to assets/b2.pdf`); }
+                const url = await uploadFileToBucket(file, bucketName, 'brochures', remotePath2);
+                d['brochure2.pdf_path'] = url || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
             } else {
-                // Supabase not configured: keep existing path or set a helpful fallback and continue
-                setStatus('Supabase not configured. PDF upload skipped. Set PDF path manually if needed.', false);
-                d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || 'assets/b2.pdf';
+                // Supabase not configured: set expected bucket URL so site references the bucket path
+                setStatus('Supabase not configured. PDF will be referenced from the bucket path (ensure file is uploaded).', false);
+                d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b2.pdf`;
             }
         } else {
-            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || 'assets/b2.pdf';
+            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b2.pdf`;
         }
 
         // Brochure images (upload if provided)

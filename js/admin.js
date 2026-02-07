@@ -937,7 +937,18 @@ async function saveContent() {
             renderContentManager();
             return;
         } else {
-            throw new Error('Supabase not configured');
+            // Supabase not configured — fall back to localStorage so admin can still save changes locally
+            try {
+                window.__adminContent = d;
+                localStorage.setItem('nb_content_data', JSON.stringify(d));
+                if (window.__contentLoader) window.__contentLoader.update(window.__adminContent);
+                updateDashboardCounts();
+                alert('Content saved locally (Supabase not configured).');
+                renderContentManager();
+                return;
+            } catch (le) {
+                throw new Error('Failed to save content locally: ' + (le.message || le));
+            }
         }
     } catch (e) {
         console.error('saveContent error', e);
@@ -1565,17 +1576,37 @@ function createEmbedForVideo(url, height = 210) {
             const file = pdf1Input.files[0];
             const safeName1 = file.name.replace(/\s+/g,'_');
             const remotePath1 = `brochures/${Date.now()}_${safeName1}`;
+
             if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
-                const url = await uploadFileToBucket(file, bucketName, 'brochures', remotePath1);
-                d['brochure1.pdf_path'] = url || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
+                try {
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucketName).upload(remotePath1, file, { upsert: true });
+                    if (uploadError) {
+                        console.warn('PDF upload error', uploadError);
+                        // record expected bucket path so site references it
+                        d['brochure1.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
+                        setStatus('Upload failed; recorded expected bucket path. Please upload the file to the bucket later.', false);
+                    } else {
+                        // Upload seemed OK — try to get a public URL
+                        try {
+                            const { data: publicData, error: publicError } = await supabaseClient.storage.from(bucketName).getPublicUrl(remotePath1);
+                            if (publicError) console.warn('getPublicUrl', publicError);
+                            d['brochure1.pdf_path'] = (publicData && (publicData.publicUrl || (publicData.data && publicData.data.publicUrl) || publicData.publicURL)) || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
+                        } catch (e) {
+                            d['brochure1.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('PDF upload threw', e);
+                    d['brochure1.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath1)}`;
+                    setStatus('Upload error; recorded expected bucket path.', false);
+                }
             } else {
-                // Supabase not configured: set expected bucket URL so site references the bucket path
-                setStatus('Supabase not configured. PDF will be referenced from the bucket path (ensure file is uploaded).', false);
-                d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b1.pdf`;
+                // Supabase not configured: do not attempt upload; keep existing path unchanged
+                setStatus('Supabase not configured. PDF not uploaded; path unchanged.', false);
             }
         } else {
-            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b1.pdf`;
+            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || d['brochure1.pdf_path'] || '';
         }
 
 
@@ -1585,17 +1616,34 @@ function createEmbedForVideo(url, height = 210) {
             const file = pdf2Input.files[0];
             const safeName2 = file.name.replace(/\s+/g,'_');
             const remotePath2 = `brochures/${Date.now()}_${safeName2}`;
+
             if (supabaseClient) {
                 setStatus(`Uploading ${file.name}...`, true);
-                const url = await uploadFileToBucket(file, bucketName, 'brochures', remotePath2);
-                d['brochure2.pdf_path'] = url || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
+                try {
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucketName).upload(remotePath2, file, { upsert: true });
+                    if (uploadError) {
+                        console.warn('PDF upload error', uploadError);
+                        d['brochure2.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
+                        setStatus('Upload failed; recorded expected bucket path. Please upload the file to the bucket later.', false);
+                    } else {
+                        try {
+                            const { data: publicData, error: publicError } = await supabaseClient.storage.from(bucketName).getPublicUrl(remotePath2);
+                            if (publicError) console.warn('getPublicUrl', publicError);
+                            d['brochure2.pdf_path'] = (publicData && (publicData.publicUrl || (publicData.data && publicData.data.publicUrl) || publicData.publicURL)) || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
+                        } catch (e) {
+                            d['brochure2.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('PDF upload threw', e);
+                    d['brochure2.pdf_path'] = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodeURIComponent(remotePath2)}`;
+                    setStatus('Upload error; recorded expected bucket path.', false);
+                }
             } else {
-                // Supabase not configured: set expected bucket URL so site references the bucket path
-                setStatus('Supabase not configured. PDF will be referenced from the bucket path (ensure file is uploaded).', false);
-                d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b2.pdf`;
+                setStatus('Supabase not configured. PDF not uploaded; path unchanged.', false);
             }
         } else {
-            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/brochures/b2.pdf`;
+            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || d['brochure2.pdf_path'] || '';
         }
 
         // Brochure images (upload if provided)

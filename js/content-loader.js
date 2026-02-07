@@ -72,9 +72,10 @@
       if (!key) return;
       const val = dataset && dataset[key];
       const isRemote = val && /^https?:\/\//i.test(val);
+      const isData = val && /^data:/i.test(val);
       const isRelative = val && (/^\//.test(val) || /^assets\//i.test(val) || /^[^:]+\/.*/.test(val));
-      // Accept either a remote https URL or a relative/site-local path so downloads work from assets during dev/deploy
-      if (isRemote || isRelative) {
+      // Accept remote https, data: URIs, or relative/site-local paths so downloads work from assets during dev/deploy
+      if (isRemote || isRelative || isData) {
         el.href = val;
         el.style.display = '';
         // always set safe rel attribute when opening in new tab
@@ -89,6 +90,8 @@
           try {
             const clean = String(val).split('?')[0].split('/').pop();
             if (clean && /\.(pdf|docx?|xlsx?)$/i.test(clean)) el.setAttribute('download', clean);
+            // if it's a data: URL, attempt to derive a sensible filename
+            if (isData && /data:application\/pdf/i.test(val)) el.setAttribute('download', 'brochure.pdf');
           } catch (e) { /* ignore */ }
         }
 

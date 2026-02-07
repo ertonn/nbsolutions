@@ -77,8 +77,21 @@
       if (isRemote || isRelative) {
         el.href = val;
         el.style.display = '';
+        // always set safe rel attribute when opening in new tab
+        try { el.setAttribute('rel', 'noopener noreferrer'); } catch(e){}
+
+        // Provide a friendly download filename when possible.
+        // Use explicit data-content-download if provided, otherwise derive filename for common doc types (pdf, docx, xls...)
         const downloadKey = el.dataset.contentDownload;
-        if (downloadKey && dataset && dataset[downloadKey]) el.setAttribute('download', dataset[downloadKey]);
+        if (downloadKey && dataset && dataset[downloadKey]) {
+          el.setAttribute('download', dataset[downloadKey]);
+        } else {
+          try {
+            const clean = String(val).split('?')[0].split('/').pop();
+            if (clean && /\.(pdf|docx?|xlsx?)$/i.test(clean)) el.setAttribute('download', clean);
+          } catch (e) { /* ignore */ }
+        }
+
       } else {
         // Hide if no usable URL is available
         el.removeAttribute('href');

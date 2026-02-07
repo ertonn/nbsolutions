@@ -14,6 +14,8 @@ const PROJECT_CATEGORIES = [
 
 // Storage bucket (public bucket you created)
 const STORAGE_BUCKET = 'storage';
+// Public Supabase URL (used to construct public storage links if SDK call fails)
+const SUPABASE_URL = 'https://krgiqtrwsievtizezqsg.supabase.co';
 
 // Gallery upload limits
 const GALLERY_MAX_FILES = 10;
@@ -1481,9 +1483,30 @@ async function saveBrochures() {
             const path = `${dir}/${Date.now()}_${safeName}`;
             const { data: uploadData, error: uploadError } = await supabaseClient.storage.from(bucket).upload(path, file, { upsert: true });
             if (uploadError) throw uploadError;
-            const { data: publicData, error: publicError } = await supabaseClient.storage.from(bucket).getPublicUrl(path);
-            if (publicError) throw publicError;
-            return publicData && publicData.publicUrl ? publicData.publicUrl : null;
+
+            // Try to get a public URL. Different Supabase SDK versions return slightly different shapes, so be defensive.
+            try {
+                const { data: publicData, error: publicError } = await supabaseClient.storage.from(bucket).getPublicUrl(path);
+                if (publicError) console.warn('getPublicUrl warning', publicError);
+                let publicUrl = null;
+                if (publicData) {
+                    // publicData may be { publicUrl } or { data: { publicUrl } }
+                    publicUrl = publicData.publicUrl || (publicData.data && publicData.data.publicUrl) || publicData.publicURL || null;
+                }
+                // If we couldn't get it via the SDK, construct the public URL using the known Supabase pattern as a fallback.
+                if (!publicUrl) {
+                    try {
+                        const SUPABASE_URL_FALLBACK = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://krgiqtrwsievtizezqsg.supabase.co';
+                        publicUrl = `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
+                    } catch (e) { /* ignore */ }
+                }
+                return publicUrl;
+            } catch (e) {
+                console.warn('getPublicUrl fallback error', e);
+                // Final fallback: return a constructed URL
+                const SUPABASE_URL_FALLBACK = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://krgiqtrwsievtizezqsg.supabase.co';
+                return `${SUPABASE_URL_FALLBACK}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
+            }
         } catch (e) {
             console.warn('upload error', e);
             return null;
@@ -1537,13 +1560,14 @@ function createEmbedForVideo(url, height = 210) {
                 setStatus(`Uploading ${file.name}...`, true);
                 const url = await uploadFileToBucket(file, bucketName, 'brochures');
                 if (url) d['brochure1.pdf_path'] = url;
-                else { d['brochure1.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
+                else { d['brochure1.pdf_path'] = 'assets/b1.pdf'; alert(`Upload failed: please manually copy the PDF to assets/b1.pdf`); }
             } else {
-                alert('Supabase not configured. Cannot upload PDF.');
-                return;
+                // Supabase not configured: keep existing path or set a helpful fallback and continue
+                setStatus('Supabase not configured. PDF upload skipped. Set PDF path manually if needed.', false);
+                d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || 'assets/b1.pdf';
             }
         } else {
-            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value;
+            d['brochure1.pdf_path'] = document.getElementById('content_brochure1_pdf_path').value || 'assets/b1.pdf';
         }
 
 
@@ -1555,13 +1579,14 @@ function createEmbedForVideo(url, height = 210) {
                 setStatus(`Uploading ${file.name}...`, true);
                 const url = await uploadFileToBucket(file, bucketName, 'brochures');
                 if (url) d['brochure2.pdf_path'] = url;
-                else { d['brochure2.pdf_path'] = `assets/${file.name}`; alert(`Upload failed: please manually copy the PDF to assets/${file.name}`); }
+                else { d['brochure2.pdf_path'] = 'assets/b2.pdf'; alert(`Upload failed: please manually copy the PDF to assets/b2.pdf`); }
             } else {
-                alert('Supabase not configured. Cannot upload PDF.');
-                return;
+                // Supabase not configured: keep existing path or set a helpful fallback and continue
+                setStatus('Supabase not configured. PDF upload skipped. Set PDF path manually if needed.', false);
+                d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || 'assets/b2.pdf';
             }
         } else {
-            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value;
+            d['brochure2.pdf_path'] = document.getElementById('content_brochure2_pdf_path').value || 'assets/b2.pdf';
         }
 
         // Brochure images (upload if provided)
@@ -1574,7 +1599,8 @@ function createEmbedForVideo(url, height = 210) {
                 if (url) d['brochure1.image_path'] = url;
                 else { d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value || ''; alert(`Image upload failed: please manually copy the image and set the path.`); }
             } else {
-                alert('Supabase not configured. Cannot upload brochure image.');
+                // Supabase not configured: skip upload but keep existing value
+                setStatus('Supabase not configured. Image upload skipped.', false);
                 d['brochure1.image_path'] = document.getElementById('content_brochure1_image_path').value || '';
             }
         } else {
@@ -1590,7 +1616,8 @@ function createEmbedForVideo(url, height = 210) {
                 if (url) d['brochure2.image_path'] = url;
                 else { d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value || ''; alert(`Image upload failed: please manually copy the image and set the path.`); }
             } else {
-                alert('Supabase not configured. Cannot upload brochure image.');
+                // Supabase not configured: skip upload but keep existing value
+                setStatus('Supabase not configured. Image upload skipped.', false);
                 d['brochure2.image_path'] = document.getElementById('content_brochure2_image_path').value || '';
             }
         } else {
